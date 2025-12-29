@@ -142,3 +142,14 @@
 {"level":"info","message":"Redis test value: hello redis","timestamp":"29/12/2025, 3:02:02 pm"}
 {"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 3:02:02 pm"}
 {"level":"info","message":"GET /api/v1/posts 200 21.843 ms","timestamp":"29/12/2025, 3:05:48 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 3:28:27 pm"}
+{"level":"info","message":"PostgreSQL connected successfully","timestamp":"29/12/2025, 3:28:27 pm"}
+{"level":"info","message":"Redis connected successfully","timestamp":"29/12/2025, 3:28:27 pm"}
+{"level":"info","message":"Redis test value: hello redis","timestamp":"29/12/2025, 3:28:27 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 3:28:27 pm"}
+{"level":"info","message":"GET /api/v1/auth/regsiter 404 1.852 ms","timestamp":"29/12/2025, 3:28:43 pm"}
+{"level":"info","message":"POST /api/v1/auth/regsiter 404 0.598 ms","timestamp":"29/12/2025, 3:28:50 pm"}
+{"level":"info","message":"POST /api/v1/auth/register 400 19.415 ms","timestamp":"29/12/2025, 3:29:38 pm"}
+{"level":"info","message":"POST /api/v1/auth/register 200 86.171 ms","timestamp":"29/12/2025, 3:29:57 pm"}
+{"level":"info","message":"PDF PATH:","timestamp":"29/12/2025, 3:30:01 pm"}
+{"level":"info","message":"✅ Email sent with PDF","timestamp":"29/12/2025, 3:30:01 pm"}
