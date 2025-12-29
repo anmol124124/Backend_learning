@@ -1,0 +1,144 @@
+[2025-12-18 12:31:49] INFO: Server started on port 3000
+2025-12-18 13:13:48 [INFO]: Redis connected successfully ✅
+2025-12-18 13:13:48 [INFO]: Server started on port 3000
+2025-12-18 13:13:48 [INFO]: Database connected successfully ✔
+2025-12-18 13:14:03 [INFO]: GET /posts 200 34.630 ms
+2025-12-18 15:00:27 [INFO]: GET /posfr 404 22.607 ms
+2025-12-18 15:01:14 [INFO]: Redis connected successfully ✅
+2025-12-18 15:01:14 [INFO]: Server started on port 3000
+2025-12-18 15:01:15 [INFO]: Database connected successfully ✔
+2025-12-18 15:01:25 [INFO]: GET /posfr 404 1.526 ms
+2025-12-18 15:07:00 [INFO]: GET /xyz 404 0.654 ms
+2025-12-18 15:14:04 info: Redis connected successfully ✅
+2025-12-18 15:14:04 info: Server started on port 3000
+2025-12-18 15:14:04 info: Database connected successfully ✔
+2025-12-18 15:14:20 info: GET /xyz 404 1.517 ms
+{"level":"info","message":"Redis connected successfully ✅","timestamp":"2025-12-18T10:02:48.890Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-18T10:02:48.909Z"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"2025-12-18T10:02:48.960Z"}
+{"level":"info","message":"GET /xyz 404 3.750 ms","timestamp":"2025-12-18T10:03:02.513Z"}
+{"level":"info","message":"Redis connected successfully ✅","timestamp":"2025-12-18T12:52:17.852Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-18T12:52:17.874Z"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"2025-12-18T12:52:17.942Z"}
+{"level":"info","message":"POST /api/v1/auth/register 404 6.546 ms","timestamp":"2025-12-19T05:41:06.350Z"}
+{"level":"info","message":"Redis connected successfully ✅","timestamp":"2025-12-19T05:41:23.359Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-19T05:41:23.371Z"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"2025-12-19T05:41:23.448Z"}
+{"level":"info","message":"POST /api/v1/auth/register 400 15.645 ms","timestamp":"2025-12-19T05:41:30.575Z"}
+{"level":"info","message":"POST /api/v1/auth/register 200 152.999 ms","timestamp":"2025-12-19T05:41:49.428Z"}
+{"level":"info","message":"GET /api/v1/posts 500 60.906 ms","timestamp":"2025-12-19T06:03:14.741Z"}
+{"level":"info","message":"Redis connected successfully ✅","timestamp":"2025-12-19T06:06:11.215Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-19T06:06:11.231Z"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"2025-12-19T06:06:11.320Z"}
+{"level":"info","message":"GET /api/v1/posts 500 3.335 ms","timestamp":"2025-12-19T06:06:18.923Z"}
+{"level":"info","message":"GET /api/v1/posts 500 1.289 ms","timestamp":"2025-12-19T06:08:52.354Z"}
+{"level":"info","message":"Redis connected successfully ✅","timestamp":"2025-12-19T06:12:33.158Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-19T06:12:33.191Z"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"2025-12-19T06:12:33.269Z"}
+{"level":"info","message":"GET /api/v1/posts 200 21.334 ms","timestamp":"2025-12-19T06:12:41.556Z"}
+{"level":"info","message":"Redis connected successfully ✅","timestamp":"2025-12-19T07:35:14.775Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-19T07:35:14.794Z"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"2025-12-19T07:35:14.871Z"}
+{"level":"info","message":"GET /api/v1/post 404 1.961 ms","timestamp":"2025-12-19T07:35:33.910Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-29T05:15:28.974Z"}
+{"level":"info","message":"Database connection failed ❌ getaddrinfo ENOTFOUND host.docker.internal","name":"SequelizeHostNotFoundError","original":{"code":"ENOTFOUND","errno":-3008,"hostname":"host.docker.internal","syscall":"getaddrinfo"},"parent":{"code":"ENOTFOUND","errno":-3008,"hostname":"host.docker.internal","syscall":"getaddrinfo"},"stack":"SequelizeHostNotFoundError: getaddrinfo ENOTFOUND host.docker.internal\n    at Client._connectionCallback (/home/user/Desktop/backend-learning/node_modules/sequelize/lib/dialects/postgres/connection-manager.js:136:24)\n    at Client._handleErrorWhileConnecting (/home/user/Desktop/backend-learning/node_modules/pg/lib/client.js:336:19)\n    at Client._handleErrorEvent (/home/user/Desktop/backend-learning/node_modules/pg/lib/client.js:346:19)\n    at Connection.emit (node:events:519:28)\n    at Socket.reportStreamError (/home/user/Desktop/backend-learning/node_modules/pg/lib/connection.js:57:12)\n    at Socket.emit (node:events:519:28)\n    at emitErrorNT (node:internal/streams/destroy:170:8)\n    at emitErrorCloseNT (node:internal/streams/destroy:129:3)\n    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)","timestamp":"2025-12-29T05:15:29.169Z"}
+{"level":"info","message":"Database connection failed ❌ connect ECONNREFUSED 127.0.0.1:5432","name":"SequelizeConnectionRefusedError","original":{"address":"127.0.0.1","code":"ECONNREFUSED","errno":-111,"port":5432,"syscall":"connect"},"parent":{"address":"127.0.0.1","code":"ECONNREFUSED","errno":-111,"port":5432,"syscall":"connect"},"stack":"SequelizeConnectionRefusedError: connect ECONNREFUSED 127.0.0.1:5432\n    at Client._connectionCallback (/home/user/Desktop/backend-learning/node_modules/sequelize/lib/dialects/postgres/connection-manager.js:133:24)\n    at Client._handleErrorWhileConnecting (/home/user/Desktop/backend-learning/node_modules/pg/lib/client.js:336:19)\n    at Client._handleErrorEvent (/home/user/Desktop/backend-learning/node_modules/pg/lib/client.js:346:19)\n    at Connection.emit (node:events:519:28)\n    at Socket.reportStreamError (/home/user/Desktop/backend-learning/node_modules/pg/lib/connection.js:57:12)\n    at Socket.emit (node:events:519:28)\n    at emitErrorNT (node:internal/streams/destroy:170:8)\n    at emitErrorCloseNT (node:internal/streams/destroy:129:3)\n    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)","timestamp":"2025-12-29T05:27:55.092Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-29T05:27:55.099Z"}
+{"level":"info","message":"Database connection failed ❌ connect ECONNREFUSED 127.0.0.1:5432","name":"SequelizeConnectionRefusedError","original":{"address":"127.0.0.1","code":"ECONNREFUSED","errno":-111,"port":5432,"syscall":"connect"},"parent":{"address":"127.0.0.1","code":"ECONNREFUSED","errno":-111,"port":5432,"syscall":"connect"},"stack":"SequelizeConnectionRefusedError: connect ECONNREFUSED 127.0.0.1:5432\n    at Client._connectionCallback (/home/user/Desktop/backend-learning/node_modules/sequelize/lib/dialects/postgres/connection-manager.js:133:24)\n    at Client._handleErrorWhileConnecting (/home/user/Desktop/backend-learning/node_modules/pg/lib/client.js:336:19)\n    at Client._handleErrorEvent (/home/user/Desktop/backend-learning/node_modules/pg/lib/client.js:346:19)\n    at Connection.emit (node:events:519:28)\n    at Socket.reportStreamError (/home/user/Desktop/backend-learning/node_modules/pg/lib/connection.js:57:12)\n    at Socket.emit (node:events:519:28)\n    at emitErrorNT (node:internal/streams/destroy:170:8)\n    at emitErrorCloseNT (node:internal/streams/destroy:129:3)\n    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)","timestamp":"2025-12-29T06:11:59.876Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-29T06:11:59.883Z"}
+{"level":"info","message":"Database connection failed ❌ connect ECONNREFUSED 127.0.0.1:5432","name":"SequelizeConnectionRefusedError","original":{"address":"127.0.0.1","code":"ECONNREFUSED","errno":-111,"port":5432,"syscall":"connect"},"parent":{"address":"127.0.0.1","code":"ECONNREFUSED","errno":-111,"port":5432,"syscall":"connect"},"stack":"SequelizeConnectionRefusedError: connect ECONNREFUSED 127.0.0.1:5432\n    at Client._connectionCallback (/home/user/Desktop/backend-learning/node_modules/sequelize/lib/dialects/postgres/connection-manager.js:133:24)\n    at Client._handleErrorWhileConnecting (/home/user/Desktop/backend-learning/node_modules/pg/lib/client.js:336:19)\n    at Client._handleErrorEvent (/home/user/Desktop/backend-learning/node_modules/pg/lib/client.js:346:19)\n    at Connection.emit (node:events:519:28)\n    at Socket.reportStreamError (/home/user/Desktop/backend-learning/node_modules/pg/lib/connection.js:57:12)\n    at Socket.emit (node:events:519:28)\n    at emitErrorNT (node:internal/streams/destroy:170:8)\n    at emitErrorCloseNT (node:internal/streams/destroy:129:3)\n    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)","timestamp":"2025-12-29T06:13:05.282Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-29T06:13:05.291Z"}
+{"level":"info","message":"Database connection failed ❌ connect ECONNREFUSED 127.0.0.1:5432","name":"SequelizeConnectionRefusedError","original":{"address":"127.0.0.1","code":"ECONNREFUSED","errno":-111,"port":5432,"syscall":"connect"},"parent":{"address":"127.0.0.1","code":"ECONNREFUSED","errno":-111,"port":5432,"syscall":"connect"},"stack":"SequelizeConnectionRefusedError: connect ECONNREFUSED 127.0.0.1:5432\n    at Client._connectionCallback (/home/user/Desktop/backend-learning/node_modules/sequelize/lib/dialects/postgres/connection-manager.js:133:24)\n    at Client._handleErrorWhileConnecting (/home/user/Desktop/backend-learning/node_modules/pg/lib/client.js:336:19)\n    at Client._handleErrorEvent (/home/user/Desktop/backend-learning/node_modules/pg/lib/client.js:346:19)\n    at Connection.emit (node:events:519:28)\n    at Socket.reportStreamError (/home/user/Desktop/backend-learning/node_modules/pg/lib/connection.js:57:12)\n    at Socket.emit (node:events:519:28)\n    at emitErrorNT (node:internal/streams/destroy:170:8)\n    at emitErrorCloseNT (node:internal/streams/destroy:129:3)\n    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)","timestamp":"2025-12-29T06:13:22.281Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-29T06:13:22.288Z"}
+{"level":"info","message":"Database connection failed ❌ connect ECONNREFUSED 127.0.0.1:5432","name":"SequelizeConnectionRefusedError","original":{"address":"127.0.0.1","code":"ECONNREFUSED","errno":-111,"port":5432,"syscall":"connect"},"parent":{"address":"127.0.0.1","code":"ECONNREFUSED","errno":-111,"port":5432,"syscall":"connect"},"stack":"SequelizeConnectionRefusedError: connect ECONNREFUSED 127.0.0.1:5432\n    at Client._connectionCallback (/home/user/Desktop/backend-learning/node_modules/sequelize/lib/dialects/postgres/connection-manager.js:133:24)\n    at Client._handleErrorWhileConnecting (/home/user/Desktop/backend-learning/node_modules/pg/lib/client.js:336:19)\n    at Client._handleErrorEvent (/home/user/Desktop/backend-learning/node_modules/pg/lib/client.js:346:19)\n    at Connection.emit (node:events:519:28)\n    at Socket.reportStreamError (/home/user/Desktop/backend-learning/node_modules/pg/lib/connection.js:57:12)\n    at Socket.emit (node:events:519:28)\n    at emitErrorNT (node:internal/streams/destroy:170:8)\n    at emitErrorCloseNT (node:internal/streams/destroy:129:3)\n    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)","timestamp":"2025-12-29T06:13:56.097Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-29T06:13:56.114Z"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"2025-12-29T06:15:52.253Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-29T06:16:31.360Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-29T06:18:57.923Z"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"2025-12-29T06:18:57.963Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-29T06:20:50.949Z"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"2025-12-29T06:20:50.987Z"}
+{"level":"info","message":"POST /auth/register 404 1.662 ms","timestamp":"2025-12-29T06:21:32.918Z"}
+{"level":"info","message":"POST /auth/register 404 0.393 ms","timestamp":"2025-12-29T06:22:34.827Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"2025-12-29T06:25:33.997Z"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"2025-12-29T06:25:34.037Z"}
+{"level":"info","message":"POST /auth/register 404 1.528 ms","timestamp":"2025-12-29T06:26:14.884Z"}
+{"level":"info","message":"POST /api/v1/auth/register 200 96.696 ms","timestamp":"2025-12-29T06:29:26.155Z"}
+{"level":"info","message":"PDF PATH:","timestamp":"2025-12-29T06:34:30.608Z"}
+{"level":"info","message":"✅ Email sent with PDF","timestamp":"2025-12-29T06:34:30.615Z"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 12:31:16 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 12:31:16 pm"}
+{"level":"info","message":"POST /api/v1/auth/register 200 90.685 ms","timestamp":"29/12/2025, 12:31:58 pm"}
+{"level":"info","message":"PDF PATH:","timestamp":"29/12/2025, 12:33:03 pm"}
+{"level":"info","message":"✅ Email sent with PDF","timestamp":"29/12/2025, 12:33:03 pm"}
+{"level":"info","message":"POST /api/v1/auth/register 400 10.079 ms","timestamp":"29/12/2025, 12:33:21 pm"}
+{"level":"info","message":"GET /api/v1/posts 500 21.195 ms","timestamp":"29/12/2025, 12:34:54 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 12:39:36 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 12:39:36 pm"}
+{"level":"info","message":"GET /api/v1/posts 500 14.410 ms","timestamp":"29/12/2025, 12:39:43 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 12:44:48 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 12:44:48 pm"}
+{"level":"info","message":"GET /api/v1/posts 500 14.329 ms","timestamp":"29/12/2025, 12:44:54 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 12:57:01 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 12:57:01 pm"}
+{"level":"info","message":"GET /api/v1/posts 200 21.765 ms","timestamp":"29/12/2025, 12:57:13 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 12:58:44 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 12:58:44 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 1:09:15 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 1:09:15 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 1:09:19 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 1:09:19 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 1:09:50 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 1:09:50 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 1:09:54 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 1:09:54 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 1:13:50 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 1:13:50 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 1:13:53 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 1:13:53 pm"}
+{"level":"info","message":"POST /api/v1/auth/register 200 123.067 ms","timestamp":"29/12/2025, 1:14:36 pm"}
+{"level":"info","message":"PDF PATH:","timestamp":"29/12/2025, 1:15:41 pm"}
+{"level":"info","message":"✅ Email sent with PDF","timestamp":"29/12/2025, 1:15:41 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 1:16:43 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 1:16:43 pm"}
+{"level":"info","message":"POST /api/v1/auth/register 200 79.406 ms","timestamp":"29/12/2025, 1:16:52 pm"}
+{"level":"info","message":"PDF PATH:","timestamp":"29/12/2025, 1:16:57 pm"}
+{"level":"info","message":"✅ Email sent with PDF","timestamp":"29/12/2025, 1:16:57 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 1:17:43 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 1:17:43 pm"}
+{"level":"info","message":"POST /api/v1/auth/register 200 91.367 ms","timestamp":"29/12/2025, 2:30:53 pm"}
+{"level":"info","message":"PDF PATH:","timestamp":"29/12/2025, 2:30:57 pm"}
+{"level":"info","message":"✅ Email sent with PDF","timestamp":"29/12/2025, 2:30:57 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 2:34:53 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 2:34:53 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 2:34:56 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 2:34:56 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 2:34:59 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 2:34:59 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 2:51:13 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 2:51:13 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 2:51:24 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 2:51:24 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 2:52:26 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 2:52:27 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 3:00:38 pm"}
+{"level":"info","message":"PostgreSQL connected successfully","timestamp":"29/12/2025, 3:00:38 pm"}
+{"level":"info","message":"Redis connected successfully","timestamp":"29/12/2025, 3:00:38 pm"}
+{"level":"info","message":"Redis test value: hello redis","timestamp":"29/12/2025, 3:00:38 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 3:00:38 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 3:01:42 pm"}
+{"level":"info","message":"PostgreSQL connected successfully","timestamp":"29/12/2025, 3:01:42 pm"}
+{"level":"info","message":"Redis connected successfully","timestamp":"29/12/2025, 3:01:42 pm"}
+{"level":"info","message":"Redis test value: hello redis","timestamp":"29/12/2025, 3:01:42 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 3:01:42 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 3:01:49 pm"}
+{"level":"info","message":"PostgreSQL connected successfully","timestamp":"29/12/2025, 3:01:49 pm"}
+{"level":"info","message":"Redis connected successfully","timestamp":"29/12/2025, 3:01:49 pm"}
+{"level":"info","message":"Redis test value: hello redis","timestamp":"29/12/2025, 3:01:49 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 3:01:49 pm"}
+{"level":"info","message":"Database connected successfully ✔","timestamp":"29/12/2025, 3:02:02 pm"}
+{"level":"info","message":"PostgreSQL connected successfully","timestamp":"29/12/2025, 3:02:02 pm"}
+{"level":"info","message":"Redis connected successfully","timestamp":"29/12/2025, 3:02:02 pm"}
+{"level":"info","message":"Redis test value: hello redis","timestamp":"29/12/2025, 3:02:02 pm"}
+{"level":"info","message":"Server started on port 3000","timestamp":"29/12/2025, 3:02:02 pm"}
+{"level":"info","message":"GET /api/v1/posts 200 21.843 ms","timestamp":"29/12/2025, 3:05:48 pm"}
