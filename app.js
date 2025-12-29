@@ -36,6 +36,9 @@ import { logMetrics } from "./utils/performanceMetrics.js";
 
 // Workers
 import "./workers/emailWorker.js";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./config/swagger.js";
+
 
 // ---------------------------------------------------------
 // 3) EXPRESS APP CREATE
@@ -62,6 +65,10 @@ app.use("/api/v1/posts", postRoutes);
 app.use("/api/v1/comments", commentRoutes);
 app.use("/api/v1/upload", uploadRoutes);
 
+
+
+// Swagger route
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // ---------------------------------------------------------
 // 6) ERROR HANDLER (ALWAYS LAST)
 // ---------------------------------------------------------

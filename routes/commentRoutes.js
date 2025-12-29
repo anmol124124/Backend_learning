@@ -8,10 +8,62 @@ import {
 
 const router = express.Router();
 
-// Create comment (login required)
+/**
+ * @swagger
+ * tags:
+ *   name: Comments
+ *   description: Comment management APIs
+ */
+
+/**
+ * @swagger
+ * /api/v1/comments:
+ *   post:
+ *     summary: Create a comment on a post
+ *     tags: [Comments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - postId
+ *               - comment
+ *             properties:
+ *               postId:
+ *                 type: integer
+ *                 example: 10
+ *               comment:
+ *                 type: string
+ *                 example: This is a great post!
+ *     responses:
+ *       201:
+ *         description: Comment created successfully
+ *       401:
+ *         description: Unauthorized
+ */
 router.post("/", authMiddleware, createComment);
 
-// Get comments of a post (public)
+/**
+ * @swagger
+ * /api/v1/comments/post/{postId}:
+ *   get:
+ *     summary: Get all comments of a post
+ *     tags: [Comments]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           example: 10
+ *     responses:
+ *       200:
+ *         description: Comments fetched successfully
+ */
 router.get("/post/:postId", getPostComments);
 
 export default router;
