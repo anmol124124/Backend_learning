@@ -1,6 +1,10 @@
 // ---------------------------------------------------------
 // 1) GLOBAL CONFIG
 // ---------------------------------------------------------
+
+// Load environment variables first
+import 'dotenv/config';
+
 process.env.TZ = "Asia/Kolkata";
 
 // ---------------------------------------------------------
@@ -38,6 +42,9 @@ import { logMetrics } from "./utils/performanceMetrics.js";
 import "./workers/emailWorker.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.js";
+import passport from "passport";
+import "./config/passport.js"; // 👈 OAuth strategies load
+
 
 
 // ---------------------------------------------------------
@@ -64,6 +71,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/posts", postRoutes);
 app.use("/api/v1/comments", commentRoutes);
 app.use("/api/v1/upload", uploadRoutes);
+app.use(passport.initialize());
 
 
 

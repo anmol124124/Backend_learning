@@ -60,6 +60,19 @@ otpExpiry: {
   type: DataTypes.DATE,
   allowNull: true,
 },
+provider: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+
+providerId: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
+password: {
+  type: DataTypes.STRING,
+  allowNull: true,
+},
 
 
 }, {

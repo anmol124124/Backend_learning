@@ -13,7 +13,7 @@ const swaggerOptions = {
     servers: [
       {
         url: "http://localhost:3000",
-        description: "Local Development Server",
+        description: "Production - Level - Development - Server",
       },
       // 👇 uncomment when deployed
       // {

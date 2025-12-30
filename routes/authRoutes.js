@@ -1,11 +1,15 @@
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
+import passport from "passport";
+// import { oauthSuccess } from "../controllers/oauthController.js";
+import jwt from "jsonwebtoken";
 
 import {
   register,
   login,
   refreshToken,
   logout,
+  oauthSuccess,
 } from "../controllers/authController.js";
 
 const router = express.Router();
@@ -139,5 +143,56 @@ router.get("/profile", authMiddleware, (req, res) => {
     userId: req.user.userId,
   });
 });
+
+
+/* ---------------- OAUTH ROUTES (NEW) ---------------- */
+
+/**
+ * @swagger
+ * /api/v1/auth/google:
+ *   get:
+ *     summary: Login with Google
+ *     tags: [Auth]
+ */
+router.get(
+  "/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+/**
+ * @swagger
+ * /api/v1/auth/google/callback:
+ *   get:
+ *     summary: Google OAuth callback
+ *     tags: [Auth]
+ */
+router.get(
+  "/google/callback",
+  passport.authenticate("google", {
+    session: false,
+    failureRedirect: "/login-failed",
+  }),
+  (req, res) => {
+    // 🔑 req.user is available here
+    const user = req.user;
+
+    // Generate JWT
+    const accessToken = jwt.sign(
+      { userId: user.id, role: user.role },
+      "mysecretkey",
+      { expiresIn: "15m" }
+    );
+
+    // ⚠️ IMPORTANT: SEND RESPONSE
+    res.json({
+      success: true,
+      message: "OAuth login successful",
+      accessToken,
+    });
+  }
+);
+
+
+
 
 export default router;

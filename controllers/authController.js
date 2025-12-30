@@ -140,3 +140,18 @@ export const logout = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const oauthSuccess = async (req, res) => {
+  const user = req.user;
+
+  const accessToken = jwt.sign(
+    { userId: user.id, role: user.role },
+    "mysecretkey",
+    { expiresIn: "15m" }
+  );
+
+  res.json({
+    message: "OAuth login successful",
+    accessToken,
+  });
+};
