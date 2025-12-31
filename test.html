@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Socket Chat Test</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+
+<h2>Socket Chat Test</h2>
+
+<input id="token" placeholder="Paste JWT token here" size="80" />
+<br /><br />
+
+<input id="toUserId" placeholder="Send to User ID" />
+<input id="message" placeholder="Message" />
+<button onclick="sendMessage()">Send</button>
+
+<h3>Messages:</h3>
+<ul id="messages"></ul>
+
+<script>
+  // STEP 1: Connect socket
+  const socket = io("http://localhost:3000");
+
+  // STEP 2: Authenticate socket
+  function authenticate() {
+    const token = document.getElementById("token").value;
+    socket.emit("authenticate", token);
+  }
+
+  // Authenticate when connected
+  socket.on("connect", () => {
+    console.log("Socket connected:", socket.id);
+    authenticate();
+  });
+
+  // Receive message
+  socket.on("receive_message", (data) => {
+    const li = document.createElement("li");
+    li.innerText = `${data.from}: ${data.message}`;
+    document.getElementById("messages").appendChild(li);
+  });
+
+  // Send message
+  function sendMessage() {
+    const toUserId = document.getElementById("toUserId").value;
+    const message = document.getElementById("message").value;
+
+    socket.emit("send_message", {
+      toUserId,
+      message
+    });
+  }
+</script>
+
+</body>
+</html>

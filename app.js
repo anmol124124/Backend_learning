@@ -1,30 +1,27 @@
 // ---------------------------------------------------------
 // 1) GLOBAL CONFIG
 // ---------------------------------------------------------
-
-// Load environment variables first
-import 'dotenv/config';
-
+import "dotenv/config";
 process.env.TZ = "Asia/Kolkata";
 
 // ---------------------------------------------------------
 // 2) IMPORTS
 // ---------------------------------------------------------
-
 import express from "express";
+import http from "http";
 
 // DB & Redis
 import { connectDB } from "./config/db.js";
 import sequelize from "./config/db.js";
 import redisClient, { connectRedis } from "./config/redis.js";
 
-// Routes (sirf routes import honge, controllers nahi)
+// Routes
 import authRoutes from "./routes/authRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
 import commentRoutes from "./routes/commentRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 
-// Models (order important)
+// Models
 import "./models/User.js";
 import "./models/Post.js";
 import "./models/associations.js";
@@ -40,77 +37,85 @@ import { logMetrics } from "./utils/performanceMetrics.js";
 
 // Workers
 import "./workers/emailWorker.js";
+
+// Swagger
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger.js";
-import passport from "passport";
-import "./config/passport.js"; // 👈 OAuth strategies load
 
+// OAuth
+import passport from "passport";
+import "./config/passport.js";
+
+// Socket
+import initSocket from "./socket/index.js";
+import { Server } from "socket.io";
+
+//health
+import healthRoutes from "./routes/healthRoutes.js";
 
 
 // ---------------------------------------------------------
 // 3) EXPRESS APP CREATE
 // ---------------------------------------------------------
-
 const app = express();
+const server = http.createServer(app); // 👈 IMPORTANT
 
 // ---------------------------------------------------------
 // 4) GLOBAL MIDDLEWARES
 // ---------------------------------------------------------
-
-app.use(express.json()); // JSON body parser
-
-// 🔥 Logging (routes se pehle)
+app.use(express.json());
 app.use(httpLogger);
 app.use(performanceLogger);
+app.use(passport.initialize());
 
 // ---------------------------------------------------------
-// 5) API ROUTES (VERSIONED)
+// 5) API ROUTES
 // ---------------------------------------------------------
-
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/posts", postRoutes);
 app.use("/api/v1/comments", commentRoutes);
 app.use("/api/v1/upload", uploadRoutes);
-app.use(passport.initialize());
+app.use("/api/v1/health", healthRoutes);
 
-
-
-// Swagger route
+// Swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-// ---------------------------------------------------------
-// 6) ERROR HANDLER (ALWAYS LAST)
-// ---------------------------------------------------------
 
+// ---------------------------------------------------------
+// 6) ERROR HANDLER
+// ---------------------------------------------------------
 app.use(errorHandler);
 
-// ---------------------------------------------------------
-// 7) DATABASE & REDIS CONNECTION
-// ---------------------------------------------------------
 
+// attach socket.io
+export const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
+
+// make io globally available
+app.set("io", io);
+// ---------------------------------------------------------
+// 7) START SERVER + SOCKET
+// ---------------------------------------------------------
 const startServer = async () => {
   try {
-    // DB
     await connectDB();
     logger.info("PostgreSQL connected successfully");
 
-    // Redis
     await connectRedis();
     logger.info("Redis connected successfully");
 
-    // Redis test
-    await redisClient.set("test_key", "hello redis");
-    const value = await redisClient.get("test_key");
-    logger.info(`Redis test value: ${value}`);
+    // initialize socket
+initSocket(server);
 
-    // Server start
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-      logger.info(`Server started on port ${PORT}`);
-    });
+// start server
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  logger.info(`Server + Socket running on port ${PORT}`);
+});
 
-    // ⏱ Performance metrics
     setInterval(logMetrics, 100000);
-
   } catch (error) {
     logger.error("Server startup failed", error);
     process.exit(1);
