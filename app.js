@@ -53,6 +53,11 @@ import { Server } from "socket.io";
 //health
 import healthRoutes from "./routes/healthRoutes.js";
 
+//csrf
+import cookieParser from "cookie-parser";
+import csrfRoutes from "./routes/csrfRoutes.js";
+
+
 
 // ---------------------------------------------------------
 // 3) EXPRESS APP CREATE
@@ -67,6 +72,7 @@ app.use(express.json());
 app.use(httpLogger);
 app.use(performanceLogger);
 app.use(passport.initialize());
+app.use(cookieParser());
 
 // ---------------------------------------------------------
 // 5) API ROUTES
@@ -76,7 +82,9 @@ app.use("/api/v1/posts", postRoutes);
 app.use("/api/v1/comments", commentRoutes);
 app.use("/api/v1/upload", uploadRoutes);
 app.use("/api/v1/health", healthRoutes);
+app.use("/api/v1/csrf", csrfRoutes);
 
+//
 // Swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 

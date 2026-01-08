@@ -2,6 +2,18 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import emailQueue from "../queues/emailQueue.js";
+import csrf from "csurf";
+import redisClient from "../config/redis.js";
+import crypto from "crypto";
+
+const csrfProtection = csrf({
+  cookie: {
+    httpOnly: true,      // frontend JS cannot read
+    sameSite: "strict",  // blocks cross-site
+    secure: false,       // true in production (HTTPS)
+  },
+});
+
 
 /* ===========================
    REGISTER CONTROLLER
@@ -59,6 +71,7 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid password" });
     }
 
+    // JWT tokens
     const accessToken = jwt.sign(
       { userId: user.id, role: user.role },
       "mysecretkey",
@@ -74,16 +87,45 @@ export const login = async (req, res) => {
     user.refreshToken = refreshToken;
     await user.save();
 
+    // 🔐 Generate CSRF token
+    const csrfToken = crypto.randomBytes(32).toString("hex");
+
+    // 🧠 Save CSRF in Redis (15 min)
+    await redisClient.set(
+      `csrf:${user.id}`,
+      csrfToken,
+      { EX: 15 * 60 }
+    );
+
+    res.cookie("refreshToken", refreshToken, {
+  httpOnly: true,
+  sameSite: "lax",     //  NOT strict
+  secure: false,      // true only for HTTPS
+  path: "/",          // VERY IMPORTANT
+});
+res.cookie("csrfToken", csrfToken, {
+  httpOnly: false,        //  CSRF token JS se readable hona chahiye
+  sameSite: "lax",        // CSRF protection ke liye
+  secure: false,          // HTTPS me true
+  path: "/",              // har route ke liye
+});
+
     res.json({
       message: "Login successful",
       accessToken,
       refreshToken,
+      csrfToken, // frontend will send this in headers
     });
+
   } catch (error) {
     console.log("LOGIN ERROR:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
+
+
 
 /* ===========================
    REFRESH TOKEN
@@ -124,20 +166,64 @@ export const refreshToken = async (req, res) => {
 =========================== */
 export const logout = async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    // 🔹 1. Read refresh token from cookies (NOT body)
+    const refreshToken = req.cookies?.refreshToken;
 
-    const user = await User.findOne({ where: { refreshToken } });
-    if (!user) {
-      return res.status(400).json({ message: "Invalid token" });
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Refresh token missing",
+      });
     }
 
+    // 🔹 2. Find user by refresh token
+    const user = await User.findOne({
+      where: { refreshToken },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid refresh token",
+      });
+    }
+
+    // 🔹 3. Remove refresh token from DB
     user.refreshToken = null;
     await user.save();
 
-    res.json({ message: "Logged out successfully" });
+    // 🔹 4. Clear AUTH cookie
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+    });
+    res.clearCookie("csrfToken", {
+  httpOnly: false,      
+  sameSite: "lax",
+  path: "/",
+});
+
+
+    // 🔹 5. Clear CSRF cookie explicitly
+    res.clearCookie("_csrf", {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+    });
+
+    // 🔹 6. Final response
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+
   } catch (error) {
     console.log("LOGOUT ERROR:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -155,3 +241,4 @@ export const oauthSuccess = async (req, res) => {
     accessToken,
   });
 };
+

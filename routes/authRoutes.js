@@ -3,6 +3,7 @@ import authMiddleware from "../middleware/authMiddleware.js";
 import passport from "passport";
 // import { oauthSuccess } from "../controllers/oauthController.js";
 import jwt from "jsonwebtoken";
+import csrfProtection from "../middleware/csrfMiddleware.js";
 
 import {
   register,
@@ -11,6 +12,7 @@ import {
   logout,
   oauthSuccess,
 } from "../controllers/authController.js";
+import verifyCsrf from "../middleware/verifyCsrf.js";
 
 const router = express.Router();
 
@@ -137,7 +139,7 @@ router.post("/logout", logout);
  *       401:
  *         description: Unauthorized
  */
-router.get("/profile", authMiddleware, (req, res) => {
+router.get("/profile", authMiddleware, verifyCsrf, (req, res) => {
   res.json({
     message: "Profile fetched successfully",
     userId: req.user.userId,
@@ -196,3 +198,4 @@ router.get(
 
 
 export default router;
+

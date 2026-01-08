@@ -12,7 +12,7 @@
     "dev:docker:down": "docker-compose down",
     "dev:local:setup": "cp .env.local .env && echo '✅ Local environment setup complete. Make sure PostgreSQL and Redis are running locally.'",
     "setup": "npm run dev:local:setup",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "NODE_ENV=test jest --runInBand"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +22,8 @@
     "bcrypt": "^6.0.0",
     "bull": "^4.16.5",
     "cloudinary": "^1.41.3",
+    "cookie-parser": "^1.4.7",
+    "csurf": "^1.11.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
@@ -45,6 +47,8 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.11",
+    "supertest": "^7.2.2"
   }
 }
