@@ -10,7 +10,10 @@ import jwt from "jsonwebtoken";              // Token verify karne ke liye
 // ---------------------------------------------------------
 
 const authMiddleware = (req, res, next) => {   // Middleware function
-  const token = req.headers.authorization;     // Header me token aata hai
+  let token = req.headers.authorization;     // Header me token aata hai
+  if (token && token.startsWith("Bearer ")) {
+    token = token.slice(7, token.length);
+  }
 
   if (!token) {                                // Agar token missing
     return res.status(401).json({

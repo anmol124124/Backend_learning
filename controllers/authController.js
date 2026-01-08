@@ -199,7 +199,7 @@ export const logout = async (req, res) => {
       path: "/",
     });
     res.clearCookie("csrfToken", {
-  httpOnly: false,      
+  httpOnly: false,      // 
   sameSite: "lax",
   path: "/",
 });

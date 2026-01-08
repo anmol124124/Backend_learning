@@ -9,6 +9,7 @@ process.env.TZ = "Asia/Kolkata";
 // ---------------------------------------------------------
 import express from "express";
 import http from "http";
+import cors from "cors";
 
 // DB & Redis
 import { connectDB } from "./config/db.js";
@@ -69,6 +70,10 @@ const server = http.createServer(app); // 👈 IMPORTANT
 // 4) GLOBAL MIDDLEWARES
 // ---------------------------------------------------------
 app.use(express.json());
+app.use(cors({
+  origin: "http://localhost:5173", // Vite default port
+  credentials: true
+}));
 app.use(httpLogger);
 app.use(performanceLogger);
 app.use(passport.initialize());
@@ -115,13 +120,13 @@ const startServer = async () => {
     logger.info("Redis connected successfully");
 
     // initialize socket
-initSocket(server);
+    initSocket(server);
 
-// start server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  logger.info(`Server + Socket running on port ${PORT}`);
-});
+    // start server
+    const PORT = process.env.PORT || 3000;
+    server.listen(PORT, () => {
+      logger.info(`Server + Socket running on port ${PORT}`);
+    });
 
     setInterval(logMetrics, 100000);
   } catch (error) {
