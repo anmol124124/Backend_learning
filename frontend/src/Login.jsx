@@ -16,8 +16,10 @@ const Login = ({ onLogin }) => {
             }, {
                 withCredentials: true
             });
-            // Assuming response.data contains { accessToken, csrfToken, ... }
-            onLogin(response.data.accessToken, response.data.csrfToken);
+            // Read CSRF token from response header (best practice)
+            const csrfFromHeader = response.headers['x-csrf-token'];
+            // console.log('CSRF Token from header:', csrfFromHeader);
+            onLogin(response.data.accessToken, csrfFromHeader);
         } catch (err) {
             setError(err.response?.data?.message || 'Login failed');
         }

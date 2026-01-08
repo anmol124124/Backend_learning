@@ -72,7 +72,8 @@ const server = http.createServer(app); // 👈 IMPORTANT
 app.use(express.json());
 app.use(cors({
   origin: "http://localhost:5173", // Vite default port
-  credentials: true
+  credentials: true,
+  exposedHeaders: ["X-CSRF-Token"] // Allow frontend to read this header
 }));
 app.use(httpLogger);
 app.use(performanceLogger);

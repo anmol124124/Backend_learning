@@ -1,10 +1,11 @@
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import emailQueue from "../queues/emailQueue.js";
 import csrf from "csurf";
-import redisClient from "../config/redis.js";
-import crypto from "crypto";
+import { generateAccessToken, generateRefreshToken } from "../utils/jwtHelper.js";
+import { generateCsrfToken, saveCsrfToRedis } from "../utils/csrfHelper.js";
+import { setRefreshTokenCookie, setCsrfTokenCookie, clearAuthCookies } from "../utils/cookieHelper.js";
+import { successWithData } from "../utils/apiResponse.js";
 
 const csrfProtection = csrf({
   cookie: {
@@ -71,50 +72,31 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid password" });
     }
 
-    // JWT tokens
-    const accessToken = jwt.sign(
-      { userId: user.id, role: user.role },
-      "mysecretkey",
-      { expiresIn: "15m" }
-    );
-
-    const refreshToken = jwt.sign(
-      { userId: user.id },
-      "refreshSecretKey",
-      { expiresIn: "7d" }
-    );
+    // 🔑 Generate JWT tokens using helper
+    const accessToken = generateAccessToken(user.id, user.role);
+    const refreshToken = generateRefreshToken(user.id);
 
     user.refreshToken = refreshToken;
     await user.save();
 
-    // 🔐 Generate CSRF token
-    const csrfToken = crypto.randomBytes(32).toString("hex");
+    // 🔐 Generate CSRF token using helper
+    const csrfToken = generateCsrfToken();
 
-    // 🧠 Save CSRF in Redis (15 min)
-    await redisClient.set(
-      `csrf:${user.id}`,
-      csrfToken,
-      { EX: 15 * 60 }
-    );
+    // 🧠 Save CSRF in Redis (15 min) using helper
+    await saveCsrfToRedis(user.id, csrfToken);
 
-    res.cookie("refreshToken", refreshToken, {
-  httpOnly: true,
-  sameSite: "lax",     //  NOT strict
-  secure: false,      // true only for HTTPS
-  path: "/",          // VERY IMPORTANT
-});
-res.cookie("csrfToken", csrfToken, {
-  httpOnly: false,        //  CSRF token JS se readable hona chahiye
-  sameSite: "lax",        // CSRF protection ke liye
-  secure: false,          // HTTPS me true
-  path: "/",              // har route ke liye
-});
+    // 🍪 Set cookies using helper
+    setRefreshTokenCookie(res, refreshToken);
+    setCsrfTokenCookie(res, csrfToken);
+
+    // 🔒 Send CSRF token in response header (best practice)
+    res.setHeader('X-CSRF-Token', csrfToken);
 
     res.json({
       message: "Login successful",
       accessToken,
       refreshToken,
-      csrfToken, // frontend will send this in headers
+      // csrfToken removed from body - now sent via header
     });
 
   } catch (error) {
@@ -192,25 +174,8 @@ export const logout = async (req, res) => {
     user.refreshToken = null;
     await user.save();
 
-    // 🔹 4. Clear AUTH cookie
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-    });
-    res.clearCookie("csrfToken", {
-  httpOnly: false,      // 
-  sameSite: "lax",
-  path: "/",
-});
-
-
-    // 🔹 5. Clear CSRF cookie explicitly
-    res.clearCookie("_csrf", {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-    });
+    // 🔹 4. Clear all auth cookies using helper
+    clearAuthCookies(res);
 
     // 🔹 6. Final response
     res.status(200).json({
@@ -230,11 +195,8 @@ export const logout = async (req, res) => {
 export const oauthSuccess = async (req, res) => {
   const user = req.user;
 
-  const accessToken = jwt.sign(
-    { userId: user.id, role: user.role },
-    "mysecretkey",
-    { expiresIn: "15m" }
-  );
+  // 🔑 Generate access token using helper
+  const accessToken = generateAccessToken(user.id, user.role);
 
   res.json({
     message: "OAuth login successful",
@@ -242,3 +204,31 @@ export const oauthSuccess = async (req, res) => {
   });
 };
 
+/**
+ * Get user profile
+ * @route GET /api/v1/auth/profile
+ * @access Private (requires authMiddleware + verifyCsrf)
+ */
+export const getProfile = (req, res) => {
+  successWithData(res, "Profile fetched successfully", {
+    userId: req.user.userId,
+  });
+};
+
+/**
+ * Google OAuth callback handler
+ * @route GET /api/v1/auth/google/callback
+ * @access Public (via passport.authenticate)
+ */
+export const googleOAuthCallback = (req, res) => {
+  const user = req.user;
+
+  // 🔑 Generate access token using helper
+  const accessToken = generateAccessToken(user.id, user.role);
+
+  res.json({
+    success: true,
+    message: "OAuth login successful",
+    accessToken,
+  });
+};

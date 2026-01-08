@@ -1,8 +1,6 @@
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
 import passport from "passport";
-// import { oauthSuccess } from "../controllers/oauthController.js";
-import jwt from "jsonwebtoken";
 import csrfProtection from "../middleware/csrfMiddleware.js";
 
 import {
@@ -11,6 +9,8 @@ import {
   refreshToken,
   logout,
   oauthSuccess,
+  getProfile,
+  googleOAuthCallback,
 } from "../controllers/authController.js";
 import verifyCsrf from "../middleware/verifyCsrf.js";
 
@@ -139,12 +139,7 @@ router.post("/logout", logout);
  *       401:
  *         description: Unauthorized
  */
-router.get("/profile", authMiddleware, verifyCsrf, (req, res) => {
-  res.json({
-    message: "Profile fetched successfully",
-    userId: req.user.userId,
-  });
-});
+router.get("/profile", authMiddleware, verifyCsrf, getProfile);
 
 
 /* ---------------- OAUTH ROUTES (NEW) ---------------- */
@@ -174,24 +169,7 @@ router.get(
     session: false,
     failureRedirect: "/login-failed",
   }),
-  (req, res) => {
-    // 🔑 req.user is available here
-    const user = req.user;
-
-    // Generate JWT
-    const accessToken = jwt.sign(
-      { userId: user.id, role: user.role },
-      "mysecretkey",
-      { expiresIn: "15m" }
-    );
-
-    // ⚠️ IMPORTANT: SEND RESPONSE
-    res.json({
-      success: true,
-      message: "OAuth login successful",
-      accessToken,
-    });
-  }
+  googleOAuthCallback
 );
 
 
