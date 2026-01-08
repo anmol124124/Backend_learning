@@ -79,17 +79,14 @@ export const login = async (req, res) => {
     user.refreshToken = refreshToken;
     await user.save();
 
-    // 🔐 Generate CSRF token using helper
     const csrfToken = generateCsrfToken();
 
-    // 🧠 Save CSRF in Redis (15 min) using helper
     await saveCsrfToRedis(user.id, csrfToken);
 
-    // 🍪 Set cookies using helper
     setRefreshTokenCookie(res, refreshToken);
+    
     setCsrfTokenCookie(res, csrfToken);
 
-    // 🔒 Send CSRF token in response header (best practice)
     res.setHeader('X-CSRF-Token', csrfToken);
 
     res.json({
