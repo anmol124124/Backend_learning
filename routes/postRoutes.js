@@ -94,7 +94,8 @@ router.get("/", getAllPosts);
  *       200:
  *         description: Paginated posts list
  */
-router.get("/paginate", validate(paginationSchema), paginatePosts);
+router.get("/paginate", validateQuery(paginationSchema), paginatePosts);
+
 
 /**
  * @swagger
