@@ -31,7 +31,7 @@ export const setCsrfTokenCookie = (res, token) => {
  * @param {Object} res - Express response object
  */
 export const clearAuthCookies = (res) => {
-    // Clear refresh token
+    // Clear refresh token if needed
     res.clearCookie("refreshToken", {
         httpOnly: true,
         sameSite: "lax",

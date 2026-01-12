@@ -72,7 +72,7 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid password" });
     }
 
-    // 🔑 Generate JWT tokens using helper
+    // Generate JWT tokens using helper
     const accessToken = generateAccessToken(user.id, user.role);
     const refreshToken = generateRefreshToken(user.id);
 
@@ -84,7 +84,7 @@ export const login = async (req, res) => {
     await saveCsrfToRedis(user.id, csrfToken);
 
     setRefreshTokenCookie(res, refreshToken);
-    
+
     setCsrfTokenCookie(res, csrfToken);
 
     res.setHeader('X-CSRF-Token', csrfToken);
