@@ -12,6 +12,13 @@ import {
   deletePost,
   adminDeletePost,
 } from "../controllers/postController.js";
+import {
+  validate,
+  validateQuery,
+  createPostSchema,
+  updatePostSchema,
+  paginationSchema
+} from "../validators/postValidator.js";
 
 const router = express.Router();
 
@@ -52,7 +59,7 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
-router.post("/", authMiddleware, createPost);
+router.post("/", authMiddleware, validate(createPostSchema), createPost);
 
 /**
  * @swagger
@@ -87,7 +94,7 @@ router.get("/", getAllPosts);
  *       200:
  *         description: Paginated posts list
  */
-router.get("/paginate", paginatePosts);
+router.get("/paginate", validate(paginationSchema), paginatePosts);
 
 /**
  * @swagger
@@ -161,7 +168,7 @@ router.get("/:id", getPostById);
  *       401:
  *         description: Unauthorized
  */
-router.put("/:id", authMiddleware, updatePost);
+router.put("/:id", authMiddleware, validate(updatePostSchema), updatePost);
 
 /**
  * @swagger
