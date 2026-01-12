@@ -5,7 +5,7 @@ import {
   createComment,
   getPostComments,
 } from "../controllers/commentController.js";
-
+import { validate, createCommentSchema } from "../validators/commentValidator.js";
 const router = express.Router();
 
 /**
@@ -45,7 +45,8 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
-router.post("/", authMiddleware, createComment);
+router.post("/", authMiddleware, validate(createCommentSchema), createComment);
+
 
 /**
  * @swagger
