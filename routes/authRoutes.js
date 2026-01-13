@@ -20,14 +20,14 @@ import {
 import verifyCsrf from "../middleware/verifyCsrf.js";
 
 const router = express.Router();
-//hello
+
 /**
  * @swagger
  * tags:
  *   name: Auth
  *   description: Authentication and authorization APIs
  */
-
+      
 /**
  * @swagger
  * /api/v1/auth/register:
@@ -60,7 +60,7 @@ const router = express.Router();
  *       400:
  *         description: Validation error
  */
-router.post("/register", validate(registerSchema), register);
+ router.post("/register", validate(registerSchema), register);
 
 
 /**
@@ -91,7 +91,7 @@ router.post("/register", validate(registerSchema), register);
  *       401:
  *         description: Invalid credentials
  */
-router.post("/login", validate(loginSchema), login);
+ router.post("/login", validate(loginSchema), login);
 
 /**
  * @swagger
@@ -117,7 +117,7 @@ router.post("/login", validate(loginSchema), login);
  *       401:
  *         description: Invalid refresh token
  */
-router.post("/refresh-token", validate(refreshTokenSchema), refreshToken);
+ router.post("/refresh-token", validate(refreshTokenSchema), refreshToken);
 
 /**
  * @swagger
@@ -129,7 +129,7 @@ router.post("/refresh-token", validate(refreshTokenSchema), refreshToken);
  *       200:
  *         description: Logout successful
  */
-router.post("/logout", logout);
+ router.post("/logout", logout);
 
 /**
  * @swagger
@@ -145,7 +145,7 @@ router.post("/logout", logout);
  *       401:
  *         description: Unauthorized
  */
-router.get("/profile", authMiddleware, verifyCsrf, getProfile);
+ router.get("/profile", authMiddleware, verifyCsrf, getProfile);
 
 
 /* ---------------- OAUTH ROUTES (NEW) ---------------- */
@@ -157,7 +157,7 @@ router.get("/profile", authMiddleware, verifyCsrf, getProfile);
  *     summary: Login with Google
  *     tags: [Auth]
  */
-router.get(
+ router.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
@@ -169,7 +169,7 @@ router.get(
  *     summary: Google OAuth callback
  *     tags: [Auth]
  */
-router.get(
+ router.get(
   "/google/callback",
   passport.authenticate("google", {
     session: false,
