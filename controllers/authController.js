@@ -229,3 +229,21 @@ export const googleOAuthCallback = (req, res) => {
     accessToken,
   });
 };
+
+/**
+ * GitHub OAuth callback handler
+ * @route GET /api/v1/auth/github/callback
+ * @access Public (via passport.authenticate)
+ */
+export const githubOAuthCallback = (req, res) => {
+  const user = req.user;
+
+  // Generate access token using helper
+  const accessToken = generateAccessToken(user.id, user.role);
+
+  res.json({
+    success: true,
+    message: "GitHub OAuth login successful",
+    accessToken,
+  });
+};

@@ -19,6 +19,7 @@ import {
   updatePostSchema,
   paginationSchema
 } from "../validators/postValidator.js";
+import { createLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
@@ -59,7 +60,7 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
-router.post("/", authMiddleware, validate(createPostSchema), createPost);
+router.post("/", authMiddleware, createLimiter, validate(createPostSchema), createPost);
 
 /**
  * @swagger

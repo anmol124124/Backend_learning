@@ -8,6 +8,8 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 // Import User model (table) to save / find users in database
 import User from "../models/User.js";
 
+import { Strategy as GitHubStrategy } from "passport-github2";
+
 
 // Tell passport that we want to use Google login
 passport.use(
@@ -86,6 +88,60 @@ passport.use(
 
       } catch (error) {
         // If anything goes wrong, send error to passport
+        return done(error, null);
+      }
+    }
+  )
+);
+
+// GitHub OAuth Strategy
+passport.use(
+  new GitHubStrategy(
+    {
+      clientID: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      callbackURL: process.env.GITHUB_CALLBACK_URL,
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        // Get user's email from GitHub profile
+        const email = profile.emails?.[0]?.value || `${profile.username}@github.com`;
+
+        // Get unique GitHub user ID
+        const githubId = profile.id;
+
+        // Get user's name from GitHub
+        const name = profile.displayName || profile.username;
+
+        // Check if user already exists by email
+        let user = await User.findOne({
+          where: { email },
+        });
+
+        // If user exists
+        if (user) {
+          // Link account with GitHub if not already linked
+          if (!user.provider || !user.providerId) {
+            user.provider = "github";
+            user.providerId = githubId;
+            await user.save();
+          }
+
+          return done(null, user);
+        }
+
+        // Create new user if doesn't exist
+        user = await User.create({
+          username: name,
+          email: email,
+          password: "GITHUB_OAUTH_USER", // Dummy password
+          role: "user",
+          provider: "github",
+          providerId: githubId,
+        });
+
+        return done(null, user);
+      } catch (error) {
         return done(error, null);
       }
     }

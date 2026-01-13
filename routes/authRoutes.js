@@ -16,9 +16,11 @@ import {
   oauthSuccess,
   getProfile,
   googleOAuthCallback,
+  githubOAuthCallback,
 } from "../controllers/authController.js";
 import verifyCsrf from "../middleware/verifyCsrf.js";
-import { authLimiter } from "../middleware/rateLimiter.js"; 
+import { authLimiter } from "../middleware/rateLimiter.js";
+
 const router = express.Router();
 
 /**
@@ -27,7 +29,7 @@ const router = express.Router();
  *   name: Auth
  *   description: Authentication and authorization APIs
  */
-       
+
 /**
  * @swagger
  * /api/v1/auth/register:
@@ -60,7 +62,7 @@ const router = express.Router();
  *       400:
  *         description: Validation error
  */
- router.post("/register", authLimiter, validate(registerSchema), register);
+router.post("/register", authLimiter, validate(registerSchema), register);
 
 
 /**
@@ -91,7 +93,7 @@ const router = express.Router();
  *       401:
  *         description: Invalid credentials
  */
- router.post("/login", authLimiter, validate(loginSchema), login);
+router.post("/login", authLimiter, validate(loginSchema), login);
 
 /**
  * @swagger
@@ -117,7 +119,7 @@ const router = express.Router();
  *       401:
  *         description: Invalid refresh token
  */
- router.post("/refresh-token", validate(refreshTokenSchema), refreshToken);
+router.post("/refresh-token", validate(refreshTokenSchema), refreshToken);
 
 /**
  * @swagger
@@ -129,7 +131,7 @@ const router = express.Router();
  *       200:
  *         description: Logout successful
  */
- router.post("/logout", logout);
+router.post("/logout", logout);
 
 /**
  * @swagger
@@ -145,7 +147,7 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
- router.get("/profile", authMiddleware, verifyCsrf, getProfile);
+router.get("/profile", authMiddleware, verifyCsrf, getProfile);
 
 
 /* ---------------- OAUTH ROUTES (NEW) ---------------- */
@@ -157,7 +159,7 @@ const router = express.Router();
  *     summary: Login with Google
  *     tags: [Auth]
  */
- router.get(
+router.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
@@ -169,7 +171,7 @@ const router = express.Router();
  *     summary: Google OAuth callback
  *     tags: [Auth]
  */
- router.get(
+router.get(
   "/google/callback",
   passport.authenticate("google", {
     session: false,
@@ -178,6 +180,32 @@ const router = express.Router();
   googleOAuthCallback
 );
 
+/**
+ * @swagger
+ * /api/v1/auth/github:
+ *   get:
+ *     summary: Login with GitHub
+ *     tags: [Auth]
+ */
+router.get(
+  "/github",
+  passport.authenticate("github", { scope: ["user:email"] })
+);
 
-export default router;
+/**
+ * @swagger
+ * /api/v1/auth/github/callback:
+ *   get:
+ *     summary: GitHub OAuth callback
+ *     tags: [Auth]
+ */
+router.get(
+  "/github/callback",
+  passport.authenticate("github", {
+    session: false,
+    failureRedirect: "/login-failed",
+  }),
+  githubOAuthCallback
+);
 
+export default router; 
