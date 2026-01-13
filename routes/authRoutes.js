@@ -18,7 +18,7 @@ import {
   googleOAuthCallback,
 } from "../controllers/authController.js";
 import verifyCsrf from "../middleware/verifyCsrf.js";
-
+import { authLimiter } from "../middleware/rateLimiter.js"; 
 const router = express.Router();
 
 /**
@@ -27,7 +27,7 @@ const router = express.Router();
  *   name: Auth
  *   description: Authentication and authorization APIs
  */
-      
+       
 /**
  * @swagger
  * /api/v1/auth/register:
@@ -60,7 +60,7 @@ const router = express.Router();
  *       400:
  *         description: Validation error
  */
- router.post("/register", validate(registerSchema), register);
+ router.post("/register", authLimiter, validate(registerSchema), register);
 
 
 /**
@@ -91,7 +91,7 @@ const router = express.Router();
  *       401:
  *         description: Invalid credentials
  */
- router.post("/login", validate(loginSchema), login);
+ router.post("/login", authLimiter, validate(loginSchema), login);
 
 /**
  * @swagger
