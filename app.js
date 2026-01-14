@@ -57,6 +57,11 @@ import healthRoutes from "./routes/healthRoutes.js";
 //csrf
 import cookieParser from "cookie-parser";
 import csrfRoutes from "./routes/csrfRoutes.js";
+//api limiter
+import { apiLimiter } from "./middleware/rateLimiter.js";
+//security header
+import { securityMiddleware } from "./middleware/security.js";
+
 
 
 
@@ -69,7 +74,10 @@ const server = http.createServer(app); // 👈 IMPORTANT
 // ---------------------------------------------------------
 // 4) GLOBAL MIDDLEWARES
 // ---------------------------------------------------------
+
 app.use(express.json());
+app.use(securityMiddleware);
+
 app.use(cors({
   origin: "http://localhost:5173", // Vite default port
   credentials: true,
@@ -79,6 +87,9 @@ app.use(httpLogger);
 app.use(performanceLogger);
 app.use(passport.initialize());
 app.use(cookieParser());
+
+// Rate limiting for all API routes
+app.use("/api", apiLimiter);
 
 // ---------------------------------------------------------
 // 5) API ROUTES
@@ -90,7 +101,7 @@ app.use("/api/v1/upload", uploadRoutes);
 app.use("/api/v1/health", healthRoutes);
 app.use("/api/v1/csrf", csrfRoutes);
 
-//
+
 // Swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
