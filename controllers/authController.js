@@ -7,13 +7,6 @@ import { generateCsrfToken, saveCsrfToRedis } from "../utils/csrfHelper.js";
 import { setRefreshTokenCookie, setCsrfTokenCookie, clearAuthCookies } from "../utils/cookieHelper.js";
 import { successWithData } from "../utils/apiResponse.js";
 
-const csrfProtection = csrf({
-  cookie: {
-    httpOnly: true,      // frontend JS cannot read
-    sameSite: "strict",  // blocks cross-site
-    secure: false,       // true in production (HTTPS)
-  },
-});
 
 
 /* ===========================
