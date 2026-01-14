@@ -1,46 +1,36 @@
 import rateLimit from 'express-rate-limit';
-
-/**
- * General API rate limiter
- * Applies to all API routes
- */
+// for all api's
 export const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // Limit each IP to 100 requests per 15 minutes
     message: {
         success: false,
-        message: 'Too many requests from this IP, please try again later.',
+        message: 'Too many requests from this IP, Please try again later.',
     },
     standardHeaders: true, // Return rate limit info in headers
     legacyHeaders: false,
 });
 
-/**
- * Strict rate limiter for authentication routes
- * Prevents brute force attacks on login/register
- */
+// for auth routes (login and register)
 export const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 5, // Limit each IP to 5 login attempts per 15 minutes
     message: {
         success: false,
-        message: 'Too many authentication attempts, please try again after 15 minutes.',
+        message: 'Too many authentication attempts, Please try again after 15 minutes.',
     },
     standardHeaders: true,
     legacyHeaders: false,
     skipSuccessfulRequests: true, // Don't count successful logins
 });
 
-/**
- * Rate limiter for creating posts/comments
- * Prevents spam
- */
+// for comments and posts
 export const createLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
     max: 10, // 10 posts/comments per minute
     message: {
         success: false,
-        message: 'You are creating content too quickly, please slow down.',
+        message: 'You are creating content too quickly, Please slow down.',
     },
     standardHeaders: true,
     legacyHeaders: false,
