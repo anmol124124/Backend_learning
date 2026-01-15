@@ -11,6 +11,7 @@ export const apiLimiter = rateLimit({
     legacyHeaders: false,
 });
 
+
 // for auth routes (login and register)
 export const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes

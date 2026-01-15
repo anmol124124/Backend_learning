@@ -12,7 +12,8 @@
     "dev:docker:down": "docker-compose down",
     "dev:local:setup": "cp .env.local .env && echo '✅ Local environment setup complete. Make sure PostgreSQL and Redis are running locally.'",
     "setup": "npm run dev:local:setup",
-    "test": "NODE_ENV=test jest --runInBand"
+    "test": "jest --verbose --coverage",
+    "test:watch": "jest --watch"
   },
   "keywords": [],
   "author": "",
@@ -60,5 +61,20 @@
     "joi": "^18.0.2",
     "nodemon": "^3.1.11",
     "supertest": "^7.2.2"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ],
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "transform": {
+      "^.+\\.js$": "babel-jest"
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(supertest)/)"
+    ]
   }
 }
