@@ -139,7 +139,7 @@ const startServer = async () => {
     // start server
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () => {
-      logger.info(`Server + Socket running on port ${PORT}`);
+      logger.info(`Server running on port ${PORT}`);
     });
 
     setInterval(logMetrics, 100000);
