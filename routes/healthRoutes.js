@@ -1,6 +1,7 @@
 import express from "express";
 import sequelize from "../config/db.js";
 import redisClient from "../config/redis.js";
+import catchAsync from "../utils/catchAsync.js";
 
 const router = express.Router();
 
@@ -8,7 +9,7 @@ const router = express.Router();
  * GET /api/v1/health
  * Health check endpoint
  */
-router.get("/", async (req, res) => {
+router.get("/", catchAsync(async (req, res, next) => {
   const health = {
     status: "OK",
     uptime: process.uptime(),
@@ -40,6 +41,6 @@ router.get("/", async (req, res) => {
   }
 
   return res.status(200).json(health);
-});
+}));
 
 export default router;
