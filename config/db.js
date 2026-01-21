@@ -1,22 +1,14 @@
-// ---------------------------------------------------------
-// 1) Sequelize import
-// ---------------------------------------------------------
 import { Sequelize } from "sequelize";
+import config from "./index.js";
 import logger from "../utils/logger.js";
-
-
-// ---------------------------------------------------------
-// 2) SEQUELIZE INSTANCE (Environment-based configuration)
-// ---------------------------------------------------------
 const sequelize = new Sequelize(
-  process.env.DB_NAME || "mydatabase",        // Database name
-  process.env.DB_USER || "postgres",          // DB user
-  process.env.DB_PASSWORD || "admin123",      // DB password
+  config.db.name,
+  config.db.user,
+  config.db.password,
   {
-    host: process.env.DB_HOST || "localhost", // DB host
-
-    port: process.env.DB_PORT || 5433,        // DB port
-    dialect: "postgres",                      // Dialect set to Postgres
+    host: config.db.host,
+    port: config.db.port,
+    dialect: "postgres",
   }
 );
 
