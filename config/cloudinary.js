@@ -3,13 +3,14 @@
 // ---------------------------------------------------------
 
 import { v2 as cloudinary } from "cloudinary";
+import config from "./index.js";
 
 // Cloudinary ko batate hain ki humare account ka naam kya hai,
 // api key kya hai, aur secret key kya hai.
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,   // Cloudinary dashboard se lo
-  api_key: process.env.CLOUDINARY_API_KEY,         // Safe access key
-  api_secret: process.env.CLOUDINARY_API_SECRET,   // Secret key for secure upload
+  cloud_name: config.cloudinary.cloudName,
+  api_key: config.cloudinary.apiKey,
+  api_secret: config.cloudinary.apiSecret,
 });
 
 export default cloudinary;

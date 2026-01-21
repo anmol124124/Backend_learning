@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import config from "../config/index.js";
 
 const socketAuth = (socket, next) => {
   try {
@@ -8,7 +9,7 @@ const socketAuth = (socket, next) => {
       return next(new Error("Authentication token missing"));
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "mysecretkey");
+    const decoded = jwt.verify(token, config.jwt.accessSecret);
 
     // attach user info to socket
     socket.user = {

@@ -1,10 +1,7 @@
 import jwt from "jsonwebtoken";
+import config from "../config/index.js";
 
-// TODO: Move these to environment variables
-const ACCESS_TOKEN_SECRET = "mysecretkey";
-const REFRESH_TOKEN_SECRET = "refreshSecretKey";
-const ACCESS_TOKEN_EXPIRY = "15m";
-const REFRESH_TOKEN_EXPIRY = "7d";
+const { accessSecret, refreshSecret, accessExpiry, refreshExpiry } = config.jwt;
 
 /**
  * Generate access token (short-lived)
@@ -15,8 +12,8 @@ const REFRESH_TOKEN_EXPIRY = "7d";
 export const generateAccessToken = (userId, role) => {
     return jwt.sign(
         { userId, role },
-        ACCESS_TOKEN_SECRET,
-        { expiresIn: ACCESS_TOKEN_EXPIRY }
+        accessSecret,
+        { expiresIn: accessExpiry }
     );
 };
 
@@ -28,8 +25,8 @@ export const generateAccessToken = (userId, role) => {
 export const generateRefreshToken = (userId) => {
     return jwt.sign(
         { userId },
-        REFRESH_TOKEN_SECRET,
-        { expiresIn: REFRESH_TOKEN_EXPIRY }
+        refreshSecret,
+        { expiresIn: refreshExpiry }
     );
 };
 
@@ -40,7 +37,7 @@ export const generateRefreshToken = (userId) => {
  * @throws {Error} - If token is invalid or expired
  */
 export const verifyAccessToken = (token) => {
-    return jwt.verify(token, ACCESS_TOKEN_SECRET);
+    return jwt.verify(token, accessSecret);
 };
 
 /**
@@ -50,5 +47,5 @@ export const verifyAccessToken = (token) => {
  * @throws {Error} - If token is invalid or expired
  */
 export const verifyRefreshToken = (token) => {
-    return jwt.verify(token, REFRESH_TOKEN_SECRET);
+    return jwt.verify(token, refreshSecret);
 };

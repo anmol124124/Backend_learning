@@ -1,8 +1,8 @@
 // ---------------------------------------------------------
 // 1) GLOBAL CONFIG
 // ---------------------------------------------------------
-import "dotenv/config";
-process.env.TZ = "Asia/Kolkata";
+import config from "./config/index.js";
+process.env.TZ = config.timezone;
 
 // ---------------------------------------------------------
 // 2) IMPORTS
@@ -137,7 +137,7 @@ const startServer = async () => {
     initSocket(server);
 
     // start server
-    const PORT = process.env.PORT || 3000;
+    const PORT = config.port;
     server.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
     });

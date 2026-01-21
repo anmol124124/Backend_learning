@@ -1,5 +1,6 @@
 // Import passport library (used for authentication)
 import passport from "passport";
+import config from "./index.js";
 
 // Import Google OAuth strategy from passport
 // This helps us login users using Google account
@@ -16,13 +17,9 @@ passport.use(
   new GoogleStrategy(
     {
       // Google gives us CLIENT_ID (who we are)
-      clientID: process.env.CLIENT_ID,
-
-      // Google gives us CLIENT_SECRET (password for Google app)
-      clientSecret: process.env.CLIENT_SECRET,
-
-      // Google will redirect user to this URL after successful login
-      callbackURL: process.env.CALLBACK_URL,
+      clientID: config.oauth.google.clientId,
+      clientSecret: config.oauth.google.clientSecret,
+      callbackURL: config.oauth.google.callbackUrl,
     },
 
     // This function runs AFTER Google login is successful
@@ -98,9 +95,9 @@ passport.use(
 passport.use(
   new GitHubStrategy(
     {
-      clientID: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL: process.env.GITHUB_CALLBACK_URL,
+      clientID: config.oauth.github.clientId,
+      clientSecret: config.oauth.github.clientSecret,
+      callbackURL: config.oauth.github.callbackUrl,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
