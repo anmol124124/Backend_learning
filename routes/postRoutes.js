@@ -11,6 +11,8 @@ import {
   updatePost,
   deletePost,
   adminDeletePost,
+  likePost,
+  unlikePost,
 } from "../controllers/postController.js";
 import {
   validate,
@@ -194,7 +196,8 @@ router.put("/:id", authMiddleware, validate(updatePostSchema), updatePost);
  *         description: Unauthorized
  */
 router.delete("/:id", authMiddleware, deletePost);
-
+router.post("/:id/toggle-like", authMiddleware, likePost);
+router.post("/:id/toggle-unlike", authMiddleware, unlikePost);
 /**
  * @swagger
  * /api/v1/posts/admin/delete/{id}:

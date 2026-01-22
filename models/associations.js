@@ -4,7 +4,7 @@
 import User from "./User.js";
 import Post from "./Post.js";
 import Comment from "./Comment.js";
-
+import Like from "./Like.js";
 
 // ---------------------------------------------------------
 // USER → POSTS (1 user = many posts)
@@ -58,8 +58,10 @@ Comment.belongsTo(Comment, {
   as: "parent",
 });
 
+User.belongsToMany(Post, { through: Like, foreignKey: "userId" });
+Post.belongsToMany(User, { through: Like, foreignKey: "postId" });
 
 // ---------------------------------------------------------
 // EXPORT ALL MODELS (ONLY ONCE)
 // ---------------------------------------------------------
-export { User, Post, Comment };
+export { User, Post, Comment, Like };

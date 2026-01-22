@@ -6,7 +6,7 @@ import { successResponse } from "../utils/apiResponse.js";
 import { logMetrics } from "../utils/performanceMetrics.js";
 import catchAsync from "../utils/catchAsync.js";
 import AppError from "../utils/AppError.js";
-
+import { Like } from "../models/associations.js";
 /* ===========================
    CREATE POST
 =========================== */
@@ -168,4 +168,32 @@ export const adminDeletePost = catchAsync(async (req, res, next) => {
   await redisClient.del("posts:all");
 
   successResponse(res, "Post deleted by admin");
+});
+//for like and unlike posts
+// 1. LIKE POST
+export const likePost = catchAsync(async (req, res, next) => {
+  const { id: postId } = req.params;
+  const userId = req.user.userId;
+
+  const post = await Post.findByPk(postId);
+  if (!post) return next(new AppError("Post not found", 404));
+
+  // Check if search already liked
+  const existingLike = await Like.findOne({ where: { userId, postId } });
+  if (existingLike) return next(new AppError("You already liked this post", 400));
+
+  await Like.create({ userId, postId });
+  successResponse(res, "Post liked successfully");
+});
+
+// 2. UNLIKE POST
+export const unlikePost = catchAsync(async (req, res, next) => {
+  const { id: postId } = req.params;
+  const userId = req.user.userId;
+
+  const existingLike = await Like.findOne({ where: { userId, postId } });
+  if (!existingLike) return next(new AppError("You haven't liked this post yet", 400));
+
+  await existingLike.destroy();
+  successResponse(res, "Post unliked successfully");
 });
