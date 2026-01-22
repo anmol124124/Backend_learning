@@ -17,13 +17,18 @@ function App() {
   };
 
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', padding: '50px' }}>
-      <h1 style={{ textAlign: 'center' }}>My App</h1>
-      {!token ? (
-        <Login onLogin={handleLogin} />
-      ) : (
-        <Profile token={token} csrfToken={csrfToken} onLogout={handleLogout} />
-      )}
+    <div style={{ fontFamily: 'Arial, sans-serif', minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
+      <div style={{ padding: '30px 50px', backgroundColor: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+        <h1 style={{ textAlign: 'center', margin: '0', color: '#333' }}>My App</h1>
+      </div>
+
+      <div style={{ padding: '30px 50px' }}>
+        {!token ? (
+          <Login onLogin={handleLogin} />
+        ) : (
+          <Profile token={token} csrfToken={csrfToken} onLogout={handleLogout} />
+        )}
+      </div>
     </div>
   );
 }
