@@ -93,3 +93,47 @@ export const refreshTokenSchema = Joi.object({
             'any.required': 'Refresh token is required',
         }),
 });
+
+// ---------------------------------------------------------
+// 5. FORGOT PASSWORD SCHEMA
+// ---------------------------------------------------------
+// Used when user forgets password and requests reset link via email
+// Only validates the email address
+
+export const forgotPasswordSchema = Joi.object({
+    email: Joi.string()
+        .email()                                    // Must be valid email format
+        .required()                                 // Cannot be empty
+        .messages({
+            'string.email': 'Please provide a valid email address',
+            'any.required': 'Email is required'
+        })
+});
+
+// ---------------------------------------------------------
+// 6. RESET PASSWORD SCHEMA  
+// ---------------------------------------------------------
+// Used when user clicks reset link and submits new password
+// Validates both the reset token and new password
+
+export const resetPasswordSchema = Joi.object({
+    token: Joi.string()
+        .required()                                 // Token from email URL is required
+        .min(10)                                    // Token should be reasonably long
+        .messages({
+            'string.min': 'Invalid reset token',
+            'any.required': 'Reset token is required'
+        }),
+
+    newPassword: Joi.string()
+        .min(8)                                     // Password must be at least 8 characters
+        .max(128)                                   // Maximum 128 characters  
+        .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/) // Must have: lowercase, uppercase, and number
+        .required()                                 // Cannot be empty
+        .messages({
+            'string.min': 'Password must be at least 8 characters long',
+            'string.max': 'Password cannot exceed 128 characters',
+            'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+            'any.required': 'New password is required'
+        })
+});

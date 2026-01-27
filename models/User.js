@@ -30,10 +30,10 @@ const User = sequelize.define("User", {         // "User" naam ka table banayega
   },
 
   role: {
-  type: DataTypes.STRING,
-  allowNull: false,
-  defaultValue: "user"   // user | admin | superadmin
-},
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: "user"   // user | admin | superadmin
+  },
 
 
   password: {
@@ -44,35 +44,52 @@ const User = sequelize.define("User", {         // "User" naam ka table banayega
     type: DataTypes.STRING,   // Long token store hoga
     allowNull: true,          // Null allowed for logout
   },
-  
+
   phone: {
-  type: DataTypes.STRING,
-  allowNull: true,
-  unique: true,
-},
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
+  },
 
-otp: {
-  type: DataTypes.STRING,
-  allowNull: true,
-},
+  otp: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 
-otpExpiry: {
-  type: DataTypes.DATE,
-  allowNull: true,
-},
-provider: {
-  type: DataTypes.STRING,
-  allowNull: true,
-},
+  otpExpiry: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  provider: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 
-providerId: {
-  type: DataTypes.STRING,
-  allowNull: true,
-},
-password: {
-  type: DataTypes.STRING,
-  allowNull: true,
-},
+  providerId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  password: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+
+  // ---------------------------------------------------------
+  // PASSWORD RESET FIELDS (for "Forgot Password" feature)
+  // ---------------------------------------------------------
+  // These columns help us securely reset user passwords via email
+
+  resetPasswordToken: {
+    type: DataTypes.STRING,                     // Text field to store hashed token
+    allowNull: true,                            // Normally null - only set when user requests reset
+    // Note: We store the HASHED version of token for security!
+  },
+
+  resetPasswordExpires: {
+    type: DataTypes.DATE,                       // Date/time when token expires
+    allowNull: true,                            // Normally null - only set with resetPasswordToken
+    // Token expires after 1 hour for security
+  },
 
 
 }, {

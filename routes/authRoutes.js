@@ -6,7 +6,9 @@ import {
   validate,
   registerSchema,
   loginSchema,
-  refreshTokenSchema
+  refreshTokenSchema,
+  forgotPasswordSchema,      // New: validation for forgot password
+  resetPasswordSchema        // New: validation for reset password
 } from "../validators/authValidator.js";
 import {
   register,
@@ -17,6 +19,8 @@ import {
   getProfile,
   googleOAuthCallback,
   githubOAuthCallback,
+  forgotPassword,            // New: forgot password controller
+  resetPassword              // New: reset password controller
 } from "../controllers/authController.js";
 import verifyCsrf from "../middleware/verifyCsrf.js";
 import { authLimiter } from "../middleware/rateLimiter.js";
@@ -206,6 +210,126 @@ router.get(
     failureRedirect: "/login-failed",
   }),
   githubOAuthCallback
+);
+
+/* ===================================================================
+   PASSWORD RESET ROUTES
+   ===================================================================
+   
+   Two endpoints for password reset feature:
+   1. /forgot-password - User requests reset link via email
+   2. /reset-password  - User sets new password using token from email
+   
+=================================================================== */
+
+/**
+ * @swagger
+ * /api/v1/auth/forgot-password:
+ *   post:
+ *     summary: Request password reset link
+ *     tags: [Auth]
+ *     description: |
+ *       Send password reset link to user's email.
+ *       Returns generic message for security (doesn't reveal if email exists).
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: anmol@gmail.com
+ *                 description: Email address of the account
+ *     responses:
+ *       200:
+ *         description: Generic success message (sent regardless of whether email exists)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: If an account with that email exists, a password reset link has been sent
+ *       400:
+ *         description: Validation error (invalid email format)
+ */
+router.post(
+  "/forgot-password",
+  authLimiter,                              // Rate limit to prevent abuse
+  validate(forgotPasswordSchema),           // Validate email format
+  forgotPassword                            // Controller function
+);
+
+/**
+ * @swagger
+ * /api/v1/auth/reset-password:
+ *   post:
+ *     summary: Reset password using token
+ *     tags: [Auth]
+ *     description: |
+ *       Set new password using the reset token received via email.
+ *       Token must be valid and not expired (1 hour expiry).
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - newPassword
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 example: a7f3e9d2c1b4a8f6e3d2c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8
+ *                 description: Reset token from email URL (64 character hex string)
+ *               newPassword:
+ *                 type: string
+ *                 format: password
+ *                 example: NewSecurePass123!
+ *                 description: New password (min 8 chars, must have uppercase, lowercase, number)
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Password reset successful. You can now login with your new password
+ *       400:
+ *         description: Invalid or expired token, or validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: Invalid or expired reset token
+ */
+router.post(
+  "/reset-password",
+  authLimiter,                              // Rate limit to prevent brute force
+  validate(resetPasswordSchema),            // Validate token and password
+  resetPassword                             // Controller function
 );
 
 export default router; 
