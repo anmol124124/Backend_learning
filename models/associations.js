@@ -62,6 +62,15 @@ User.belongsToMany(Post, { through: Like, foreignKey: "userId" });
 Post.belongsToMany(User, { through: Like, foreignKey: "postId" });
 
 // ---------------------------------------------------------
+// DIRECT ASSOCIATIONS FOR LIKE (Needed for calculations)
+// ---------------------------------------------------------
+User.hasMany(Like, { foreignKey: "userId" });
+Like.belongsTo(User, { foreignKey: "userId" });
+
+Post.hasMany(Like, { foreignKey: "postId" });
+Like.belongsTo(Post, { foreignKey: "postId" });
+
+// ---------------------------------------------------------
 // EXPORT ALL MODELS (ONLY ONCE)
 // ---------------------------------------------------------
 export { User, Post, Comment, Like };

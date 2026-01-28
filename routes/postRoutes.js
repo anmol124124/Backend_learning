@@ -13,6 +13,9 @@ import {
   adminDeletePost,
   likePost,
   unlikePost,
+  getPostsWithStats,    // New: Advanced query
+  getUserStats,         // New: Advanced query
+  getTopPosts          // New: Advanced query
 } from "../controllers/postController.js";
 import {
   validate,
@@ -225,5 +228,56 @@ router.delete(
   allowRoles("admin", "superadmin"),
   adminDeletePost
 );
+
+/**
+ * @swagger
+ * /api/v1/posts/stats/all:
+ *   get:
+ *     summary: Get all posts with like and comment counts
+ *     tags: [Posts]
+ *     responses:
+ *       200:
+ *         description: Posts with stats fetched successfully
+ */
+router.get("/stats/all", getPostsWithStats);
+
+/**
+ * @swagger
+ * /api/v1/posts/stats/user/{userId}:
+ *   get:
+ *     summary: Get user statistics (total posts, likes, comments)
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: User stats fetched successfully
+ *       404:
+ *         description: User not found
+ */
+router.get("/stats/user/:userId", getUserStats);
+
+/**
+ * @swagger
+ * /api/v1/posts/stats/top:
+ *   get:
+ *     summary: Get top posts by like count
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Number of top posts to return
+ *     responses:
+ *       200:
+ *         description: Top posts fetched successfully
+ */
+router.get("/stats/top", getTopPosts);
 
 export default router;

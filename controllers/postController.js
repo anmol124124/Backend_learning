@@ -1,12 +1,11 @@
-import Post from "../models/Post.js";
-import User from "../models/User.js";
+import { User, Post, Comment, Like } from "../models/associations.js";
 import redisClient from "../config/redis.js";
+import sequelize from "../config/db.js";
 import { Op } from "sequelize";
 import { successResponse } from "../utils/apiResponse.js";
 import { logMetrics } from "../utils/performanceMetrics.js";
 import catchAsync from "../utils/catchAsync.js";
 import AppError from "../utils/AppError.js";
-import { Like } from "../models/associations.js";
 /* ===========================
    CREATE POST
 =========================== */
@@ -232,4 +231,82 @@ export const unlikePost = catchAsync(async (req, res, next) => {
   });
 
   successResponse(res, "Post unliked successfully");
+});
+/* ===========================
+   ADVANCED QUERIES - GET POSTS WITH STATS
+=========================== */
+export const getPostsWithStats = catchAsync(async (req, res, next) => {
+  const posts = await Post.findAll({
+    include: [
+      { model: User, attributes: ['id', 'username', 'email'] },
+      { model: Like, attributes: [] },
+      { model: Comment, attributes: [] }
+    ],
+    attributes: [
+      'id', 'title', 'content', 'createdAt', 'updatedAt',
+      [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Likes.id'))), 'likeCount'],
+      [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Comments.id'))), 'commentCount']
+    ],
+    group: ['Post.id', 'User.id'],
+    order: [['createdAt', 'DESC']]
+  });
+
+  successResponse(res, "Posts with stats fetched successfully", posts);
+});
+
+/* ===========================
+   ADVANCED QUERIES - GET USER STATS
+=========================== */
+export const getUserStats = catchAsync(async (req, res, next) => {
+  const { userId } = req.params;
+
+  const user = await User.findByPk(userId);
+  if (!user) {
+    return next(new AppError("User not found", 404));
+  }
+
+  const stats = await User.findOne({
+    where: { id: userId },
+    include: [{
+      model: Post,
+      as: 'Posts',
+      include: [
+        { model: Like, attributes: [] },
+        { model: Comment, attributes: [] }
+      ],
+      attributes: []
+    }],
+    attributes: [
+      'id', 'username', 'email', 'createdAt',
+      [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Posts.id'))), 'totalPosts'],
+      [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Posts.Likes.id'))), 'totalLikesReceived'],
+      [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Posts.Comments.id'))), 'totalCommentsReceived']
+    ],
+    group: ['User.id']
+  });
+
+  successResponse(res, "User stats fetched successfully", stats);
+});
+
+/* ===========================
+   ADVANCED QUERIES - GET TOP POSTS
+=========================== */
+export const getTopPosts = catchAsync(async (req, res, next) => {
+  const limit = parseInt(req.query.limit) || 10;
+
+  const topPosts = await Post.findAll({
+    include: [
+      { model: User, attributes: ['id', 'username'] },
+      { model: Like, attributes: [] }
+    ],
+    attributes: [
+      'id', 'title', 'content', 'createdAt',
+      [sequelize.fn('COUNT', sequelize.col('Likes.id')), 'likeCount']
+    ],
+    group: ['Post.id', 'User.id'],
+    order: [[sequelize.literal('likeCount'), 'DESC']],
+    limit: limit
+  });
+
+  successResponse(res, `Top ${limit} posts fetched successfully`, topPosts);
 });
