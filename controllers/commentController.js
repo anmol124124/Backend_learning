@@ -1,11 +1,12 @@
 import Comment from "../models/Comment.js";
 import Post from "../models/Post.js";
+import sequelize from "../config/db.js";  // For transactions
 import catchAsync from "../utils/catchAsync.js";
 import AppError from "../utils/AppError.js";
 import { successResponse } from "../utils/apiResponse.js";
 
 /* ===========================
-   CREATE COMMENT
+   CREATE COMMENT (WITH TRANSACTION)
 =========================== */
 export const createComment = catchAsync(async (req, res, next) => {
   const { postId, content, parentCommentId } = req.body;
@@ -17,11 +18,18 @@ export const createComment = catchAsync(async (req, res, next) => {
     return next(new AppError("Post not found", 404));
   }
 
-  const newComment = await Comment.create({
-    content,
-    userId,
-    postId,
-    parentCommentId: parentCommentId || null,
+  // ---------------------------------------------------------
+  // USE TRANSACTION: Create comment atomically
+  // ---------------------------------------------------------
+  const newComment = await sequelize.transaction(async (t) => {
+    const comment = await Comment.create({
+      content,
+      userId,
+      postId,
+      parentCommentId: parentCommentId || null,
+    }, { transaction: t });
+
+    return comment;
   });
 
   successResponse(res, "Comment added successfully", newComment);

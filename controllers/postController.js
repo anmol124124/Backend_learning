@@ -139,7 +139,7 @@ export const updatePost = catchAsync(async (req, res, next) => {
 });
 
 /* ===========================
-   DELETE POST
+   DELETE POST (WITH TRANSACTION)
 =========================== */
 export const deletePost = catchAsync(async (req, res, next) => {
   const post = await Post.findByPk(req.params.id);
@@ -150,8 +150,32 @@ export const deletePost = catchAsync(async (req, res, next) => {
     return next(new AppError("Unauthorized", 403));
   }
 
-  await post.destroy();
+  // ---------------------------------------------------------
+  // USE TRANSACTION: Delete post + comments + likes together
+  // ---------------------------------------------------------
+  // Why? If we delete post but comments/likes deletion fails,
+  // we'll have orphaned data in the database!
+
+  await sequelize.transaction(async (t) => {
+    // Step 1: Delete all comments on this post
+    await Comment.destroy({
+      where: { postId: req.params.id },
+      transaction: t
+    });
+
+    // Step 2: Delete all likes on this post
+    await Like.destroy({
+      where: { postId: req.params.id },
+      transaction: t
+    });
+
+    // Step 3: Delete the post itself
+    await post.destroy({ transaction: t });
+  });
+
+  // Clear cache after successful transaction
   await redisClient.del("posts:all");
+  await redisClient.del(`posts:id:${req.params.id}`);
 
   successResponse(res, "Post deleted successfully");
 });
@@ -170,7 +194,7 @@ export const adminDeletePost = catchAsync(async (req, res, next) => {
   successResponse(res, "Post deleted by admin");
 });
 //for like and unlike posts
-// 1. LIKE POST
+// 1. LIKE POST (WITH TRANSACTION)
 export const likePost = catchAsync(async (req, res, next) => {
   const { id: postId } = req.params;
   const userId = req.user.userId;
@@ -178,15 +202,21 @@ export const likePost = catchAsync(async (req, res, next) => {
   const post = await Post.findByPk(postId);
   if (!post) return next(new AppError("Post not found", 404));
 
-  // Check if search already liked
+  // Check if user already liked
   const existingLike = await Like.findOne({ where: { userId, postId } });
   if (existingLike) return next(new AppError("You already liked this post", 400));
 
-  await Like.create({ userId, postId });
+  // ---------------------------------------------------------
+  // USE TRANSACTION: Create like atomically
+  // ---------------------------------------------------------
+  await sequelize.transaction(async (t) => {
+    await Like.create({ userId, postId }, { transaction: t });
+  });
+
   successResponse(res, "Post liked successfully");
 });
 
-// 2. UNLIKE POST
+// 2. UNLIKE POST (WITH TRANSACTION)
 export const unlikePost = catchAsync(async (req, res, next) => {
   const { id: postId } = req.params;
   const userId = req.user.userId;
@@ -194,6 +224,12 @@ export const unlikePost = catchAsync(async (req, res, next) => {
   const existingLike = await Like.findOne({ where: { userId, postId } });
   if (!existingLike) return next(new AppError("You haven't liked this post yet", 400));
 
-  await existingLike.destroy();
+  // ---------------------------------------------------------
+  // USE TRANSACTION: Delete like atomically
+  // ---------------------------------------------------------
+  await sequelize.transaction(async (t) => {
+    await existingLike.destroy({ transaction: t });
+  });
+
   successResponse(res, "Post unliked successfully");
 });
