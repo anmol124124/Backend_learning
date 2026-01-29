@@ -3,7 +3,7 @@ import sequelize from "../config/db.js";
 
 // Comment Model → database table structure
 const Comment = sequelize.define("Comment", {
-  
+
   content: {
     type: DataTypes.TEXT,
     allowNull: false,               // Empty comment allowed nahi
@@ -24,6 +24,10 @@ const Comment = sequelize.define("Comment", {
     allowNull: true,                // Reply ke liye (null = normal comment)
   },
 
+}, {
+  timestamps: true,
+  paranoid: true
+  // createdAt + updatedAt auto add honge
 });
 
 export default Comment;

@@ -38,7 +38,9 @@ const Post = sequelize.define("Post", {
   }
 
 }, {
-  timestamps: true               // createdAt + updatedAt auto add honge
+  timestamps: true,
+  paranoid: true
+  // createdAt + updatedAt auto add honge
 });
 
 

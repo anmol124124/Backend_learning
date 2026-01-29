@@ -31,6 +31,7 @@ const Like = sequelize.define("Like", {
 }, {
     // Automatically adds createdAt and updatedAt columns
     timestamps: true,
+    paranoid: true,
 
     // Prevents the same user from liking the same post more than once
     // (userId + postId combination must be unique)
