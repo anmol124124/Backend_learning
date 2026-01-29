@@ -1,4 +1,7 @@
 import bcrypt from "bcrypt";
+import crypto from "crypto";
+import jwt from "jsonwebtoken";
+import { Op } from "sequelize";
 import User from "../models/User.js";
 import emailQueue from "../queues/emailQueue.js";
 import csrf from "csurf";

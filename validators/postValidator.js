@@ -43,7 +43,8 @@ export const validateQuery = (schema) => {
             });
         }
 
-        req.query = value;
+        // Store validated query params in a new property instead of replacing req.query
+        req.validatedQuery = value;
         next();
     };
 };
@@ -98,4 +99,9 @@ export const paginationSchema = Joi.object({
         .min(1)
         .max(100)
         .default(10),
+
+    search: Joi.string()
+        .allow('')
+        .optional()
+        .default(''),
 });

@@ -24,7 +24,9 @@ export const createPost = catchAsync(async (req, res, next) => {
    PAGINATION + SEARCH
 =========================== */
 export const paginatePosts = catchAsync(async (req, res, next) => {
-  let { page = 1, limit = 5, search = "" } = req.query;
+  // Use validatedQuery if available (from validateQuery middleware), otherwise fallback to query
+  const queryParams = req.validatedQuery || req.query;
+  let { page = 1, limit = 5, search = "" } = queryParams;
   page = parseInt(page);
   limit = parseInt(limit);
 
@@ -265,25 +267,36 @@ export const getUserStats = catchAsync(async (req, res, next) => {
     return next(new AppError("User not found", 404));
   }
 
-  const stats = await User.findOne({
-    where: { id: userId },
-    include: [{
-      model: Post,
-      as: 'Posts',
-      include: [
-        { model: Like, attributes: [] },
-        { model: Comment, attributes: [] }
-      ],
-      attributes: []
-    }],
-    attributes: [
-      'id', 'username', 'email', 'createdAt',
-      [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Posts.id'))), 'totalPosts'],
-      [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Posts.Likes.id'))), 'totalLikesReceived'],
-      [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Posts.Comments.id'))), 'totalCommentsReceived']
-    ],
-    group: ['User.id']
-  });
+  // Get counts separately for better reliability and performance
+  const [totalPosts, totalLikesReceived, totalCommentsReceived] = await Promise.all([
+    Post.count({ where: { userId } }),
+    Like.count({
+      include: [{
+        model: Post,
+        where: { userId },
+        required: true,
+        attributes: []
+      }]
+    }),
+    Comment.count({
+      include: [{
+        model: Post,
+        where: { userId },
+        required: true,
+        attributes: []
+      }]
+    })
+  ]);
+
+  const stats = {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    createdAt: user.createdAt,
+    totalPosts,
+    totalLikesReceived,
+    totalCommentsReceived
+  };
 
   successResponse(res, "User stats fetched successfully", stats);
 });
