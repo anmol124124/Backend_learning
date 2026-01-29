@@ -1,0 +1,1 @@
+host.docker.internal:5433:mydatabase:postgres:admin123

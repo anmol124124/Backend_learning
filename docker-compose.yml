@@ -1,51 +1,52 @@
 version: "3.9"
 
+# PostgreSQL and Redis are running on your HOST machine
+# Only pgAdmin runs in Docker for database viewing
 
 services:
-  backend:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - REDIS_URL=redis://redis:6379
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=mydatabase
-      - DB_USER=postgres
-      - DB_PASSWORD=admin123
-    depends_on:
-      - redis
-      - postgres
+  # backend:
+  #   build: .
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - REDIS_URL=redis://redis:6379
+  #     - DB_HOST=postgres
+  #     - DB_PORT=5432
+  #     - DB_NAME=mydatabase
+  #     - DB_USER=postgres
+  #     - DB_PASSWORD=admin123
+  #   depends_on:
+  #     - redis
+  #     - postgres
 
-  redis:
-    image: redis:6
-    ports:
-      - "6379:6379"
+  # redis:
+  #   image: redis:6
+  #   ports:
+  #     - "6379:6379"
 
-  postgres:
-    image: postgres:15
-    ports:
-      - "5433:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin123
-      POSTGRES_DB: mydatabase
-      TZ : Asia/Kolkata
+  # postgres:
+  #   image: postgres:15
+  #   ports:
+  #     - "5433:5432"
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: admin123
+  #     POSTGRES_DB: mydatabase
+  #     TZ : Asia/Kolkata
 
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: pgadmin
     restart: always
-    ports:
-      - "1234:80"  # Access pgAdmin on localhost:1234
+    network_mode: host  # Use host network to access localhost PostgreSQL
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin123
       PGADMIN_CONFIG_SERVER_MODE: 'False'
-    depends_on:
-      - postgres
+      PGADMIN_LISTEN_PORT: 1234  # pgAdmin will listen on port 1234
     volumes:
       - pgadmin_data:/var/lib/pgadmin
 
 volumes:
   pgadmin_data:
+
