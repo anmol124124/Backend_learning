@@ -48,7 +48,7 @@ export const register = catchAsync(async (req, res, next) => {
     pdfPath: "/home/user/Downloads/Template-Filled.csv",
   });
 
-  successResponse(res, "User registered successfully", {
+  successResponse(res, "User registered successfully, Thanks for joining us", {
     userId: newUser.id,
   });
 });
@@ -182,12 +182,25 @@ export const getProfile = catchAsync(async (req, res, next) => {
 export const googleOAuthCallback = catchAsync(async (req, res, next) => {
   const user = req.user;
 
-  // 🔑 Generate access token using helper
+  // 🔑 Generate access token and refresh token
   const accessToken = generateAccessToken(user.id, user.role);
+  const refreshToken = generateRefreshToken(user.id);
 
-  successResponse(res, "OAuth login successful", {
-    accessToken,
-  });
+  // Save refresh token to user
+  user.refreshToken = refreshToken;
+  await user.save();
+
+  // Generate CSRF token for OAuth login
+  const csrfToken = generateCsrfToken();
+  await saveCsrfToRedis(user.id, csrfToken);
+
+  // Set cookies
+  setRefreshTokenCookie(res, refreshToken);
+  setCsrfTokenCookie(res, csrfToken);
+
+  // Redirect to frontend with tokens in URL
+  const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
+  res.redirect(`${frontendURL}/oauth/callback?token=${accessToken}&csrf=${csrfToken}&provider=google`);
 });
 
 /**
@@ -195,18 +208,29 @@ export const googleOAuthCallback = catchAsync(async (req, res, next) => {
  * @route GET /api/v1/auth/github/callback
  * @access Public (via passport.authenticate)
  */
-export const githubOAuthCallback = (req, res) => {
+export const githubOAuthCallback = catchAsync(async (req, res, next) => {
   const user = req.user;
 
-  // Generate access token using helper
+  // Generate access token and refresh token
   const accessToken = generateAccessToken(user.id, user.role);
+  const refreshToken = generateRefreshToken(user.id);
 
-  res.json({
-    success: true,
-    message: "GitHub OAuth login successful",
-    accessToken,
-  });
-};
+  // Save refresh token to user
+  user.refreshToken = refreshToken;
+  await user.save();
+
+  // Generate CSRF token for OAuth login
+  const csrfToken = generateCsrfToken();
+  await saveCsrfToRedis(user.id, csrfToken);
+
+  // Set cookies
+  setRefreshTokenCookie(res, refreshToken);
+  setCsrfTokenCookie(res, csrfToken);
+
+  // Redirect to frontend with tokens in URL
+  const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
+  res.redirect(`${frontendURL}/oauth/callback?token=${accessToken}&csrf=${csrfToken}&provider=github`);
+});
 
 /* ================================================================
    FORGOT PASSWORD CONTROLLER
