@@ -26,6 +26,15 @@ export const validate = (schema) => {
 
 // Schema for creating a comment
 export const createCommentSchema = Joi.object({
+    postId: Joi.number()
+        .integer()
+        .positive()
+        .required()
+        .messages({
+            'number.base': 'Post ID must be a number',
+            'number.positive': 'Post ID must be positive',
+            'any.required': 'Post ID is required',
+        }),
     content: Joi.string()
         .min(1)
         .max(1000)
@@ -34,5 +43,14 @@ export const createCommentSchema = Joi.object({
             'string.min': 'Comment cannot be empty',
             'string.max': 'Comment must not exceed 1000 characters',
             'any.required': 'Comment content is required',
+        }),
+    parentCommentId: Joi.number()
+        .integer()
+        .positive()
+        .optional()
+        .allow(null)
+        .messages({
+            'number.base': 'Parent comment ID must be a number',
+            'number.positive': 'Parent comment ID must be positive',
         }),
 });

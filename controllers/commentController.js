@@ -1,4 +1,4 @@
-import { Comment, Post } from "../models/associations.js";
+import { User, Comment, Post } from "../models/associations.js";
 import sequelize from "../config/db.js";  // For transactions
 import catchAsync from "../utils/catchAsync.js";
 import AppError from "../utils/AppError.js";

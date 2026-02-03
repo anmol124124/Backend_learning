@@ -41,20 +41,39 @@ export const paginatePosts = catchAsync(async (req, res, next) => {
     where: whereCondition,
     limit,
     offset,
-    include: {
-      model: User,
-      attributes: ["id", "username", "email"],
+    include: [
+      {
+        model: User,
+        attributes: ["id", "username", "email"],
+      },
+      {
+        model: Comment,
+        attributes: []  // Don't fetch comment data, just count
+      }
+    ],
+    attributes: {
+      include: [
+        [sequelize.fn('COUNT', sequelize.col('Comments.id')), 'commentCount']
+      ]
     },
+    group: ['Post.id', 'User.id'],
+    subQuery: false,
     order: [["createdAt", "DESC"]],
   });
 
+  // Format the response to include commentCount as a number
+  const formattedPosts = posts.map(post => ({
+    ...post.toJSON(),
+    commentCount: parseInt(post.dataValues.commentCount) || 0
+  }));
+
   successResponse(res, "Posts fetched successfully", {
-    posts,
+    posts: formattedPosts,
     pagination: {
       page,
       limit,
-      totalPosts: count,
-      totalPages: Math.ceil(count / limit),
+      totalPosts: count.length || count,  // count is an array when using GROUP BY
+      totalPages: Math.ceil((count.length || count) / limit),
     },
   });
 });
