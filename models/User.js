@@ -93,7 +93,16 @@ const User = sequelize.define("User", {         // "User" naam ka table banayega
 
 
 }, {
-  timestamps: true                               // createdAt & updatedAt automatically add honge
+  timestamps: true,                              // createdAt & updatedAt automatically add honge
+
+  // Database indexes for performance optimization
+  indexes: [
+    { fields: ['email'] },                       // Login queries - most frequent
+    { fields: ['username'] },                    // Profile lookups
+    { fields: ['createdAt'] },                   // Sorting by registration date
+    { fields: ['provider', 'providerId'] },      // OAuth lookups (Google, GitHub)
+    { fields: ['resetPasswordToken'] }           // Password reset lookups
+  ]
 });
 
 

@@ -9,6 +9,29 @@ const sequelize = new Sequelize(
     host: config.db.host,
     port: config.db.port,
     dialect: "postgres",
+
+    // Connection pool configuration for better performance
+    pool: {
+      max: 10,        // Maximum 10 connections in pool
+      min: 2,         // Minimum 2 connections always ready
+      acquire: 30000, // Max 30 seconds to get connection
+      idle: 10000     // Close connection after 10 seconds idle
+    },
+
+    // Query performance logging
+    benchmark: true,
+    logging: (query, time) => {
+      // Log slow queries (>100ms) for optimization
+      if (time > 100) {
+        logger.warn(`Slow query detected: ${time}ms`, {
+          query: query.substring(0, 200) // Log first 200 chars
+        });
+      }
+      // In development, log all queries
+      if (process.env.NODE_ENV === 'development' && time) {
+        logger.debug(`Query executed in ${time}ms`);
+      }
+    }
   }
 );
 

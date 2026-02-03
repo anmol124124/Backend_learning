@@ -31,6 +31,12 @@ export const errorHandler = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || "error";
 
+  // TEMPORARY: Log full error for debugging
+  console.error("=== ERROR DETAILS ===");
+  console.error("Message:", err.message);
+  console.error("Stack:", err.stack);
+  console.error("====================");
+
   if (config.env === "development") {
     sendErrorDev(err, res);
   } else {

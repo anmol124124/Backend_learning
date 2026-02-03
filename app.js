@@ -31,6 +31,7 @@ import "./models/associations.js";
 import errorHandler from "./middleware/errorHandler.js";
 import httpLogger from "./middleware/httpLogger.js";
 import performanceLogger from "./middleware/performanceLogger.js";
+import queryMonitor from "./middleware/queryMonitor.js";
 
 // Utils
 import logger from "./utils/logger.js";
@@ -87,6 +88,7 @@ app.use(cors({
 }));
 app.use(httpLogger);
 app.use(performanceLogger);
+app.use(queryMonitor);  // Track API request performance
 app.use(passport.initialize());
 app.use(cookieParser());
 

@@ -11,6 +11,7 @@ import {
   updatePost,
   deletePost,
   adminDeletePost,
+  toggleLike,          // New: Toggle like/unlike
   likePost,
   unlikePost,
   getPostsWithStats,    // New: Advanced query
@@ -199,7 +200,7 @@ router.put("/:id", authMiddleware, validate(updatePostSchema), updatePost);
  *         description: Unauthorized
  */
 router.delete("/:id", authMiddleware, deletePost);
-router.post("/:id/toggle-like", authMiddleware, likePost);
+router.post("/:id/toggle-like", authMiddleware, toggleLike);  // Toggle like/unlike
 router.post("/:id/toggle-unlike", authMiddleware, unlikePost);
 /**
  * @swagger

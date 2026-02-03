@@ -39,7 +39,15 @@ const Post = sequelize.define("Post", {
 
 }, {
   timestamps: true,
-  paranoid: true
+  paranoid: true,
+
+  // Database indexes for performance optimization
+  indexes: [
+    { fields: ['userId'] },                      // Get user's posts
+    { fields: ['createdAt'] },                   // Sort by date
+    { fields: ['userId', 'createdAt'] },         // Compound: user's posts sorted by date
+    { fields: ['deletedAt'] }                    // Paranoid queries (soft deletes)
+  ]
   // createdAt + updatedAt auto add honge
 });
 

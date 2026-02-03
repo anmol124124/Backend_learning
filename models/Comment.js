@@ -26,7 +26,16 @@ const Comment = sequelize.define("Comment", {
 
 }, {
   timestamps: true,
-  paranoid: true
+  paranoid: true,
+
+  // Database indexes for performance optimization
+  indexes: [
+    { fields: ['postId'] },                      // Get post's comments
+    { fields: ['userId'] },                      // Get user's comments
+    { fields: ['parentCommentId'] },             // Get nested replies
+    { fields: ['postId', 'createdAt'] },         // Post comments sorted by date
+    { fields: ['deletedAt'] }                    // Paranoid queries (soft deletes)
+  ]
   // createdAt + updatedAt auto add honge
 });
 

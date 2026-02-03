@@ -6,6 +6,7 @@ import { successResponse } from "../utils/apiResponse.js";
 import { logMetrics } from "../utils/performanceMetrics.js";
 import catchAsync from "../utils/catchAsync.js";
 import AppError from "../utils/AppError.js";
+
 /* ===========================
    CREATE POST
 =========================== */
@@ -194,7 +195,50 @@ export const adminDeletePost = catchAsync(async (req, res, next) => {
 
   successResponse(res, "Post deleted by admin");
 });
-//for like and unlike posts
+
+/* ===========================
+   TOGGLE LIKE (NEW - HANDLES BOTH LIKE AND UNLIKE)
+=========================== */
+export const toggleLike = catchAsync(async (req, res, next) => {
+  const { id: postId } = req.params;
+  const userId = req.user.userId;
+
+  // Check if post exists
+  const post = await Post.findByPk(postId);
+  if (!post) return next(new AppError("Post not found", 404));
+
+  // Check if user already liked (including soft-deleted likes)
+  const existingLike = await Like.findOne({
+    where: { userId, postId },
+    paranoid: false  // Include soft-deleted records
+  });
+
+  await sequelize.transaction(async (t) => {
+    if (existingLike) {
+      if (existingLike.deletedAt) {
+        // Like was soft-deleted, restore it
+        await existingLike.restore({ transaction: t });
+      } else {
+        // Like exists, soft-delete it (unlike)
+        await existingLike.destroy({ transaction: t });
+      }
+    } else {
+      // No like exists, create new one
+      await Like.create({ userId, postId }, { transaction: t });
+    }
+  });
+
+  // Return the new state
+  const isLiked = existingLike ? (existingLike.deletedAt ? true : false) : true;
+  const likeCount = await Like.count({ where: { postId } });
+
+  successResponse(res, isLiked ? "Post liked successfully" : "Post unliked successfully", {
+    isLiked,
+    likeCount
+  });
+});
+
+// LEGACY ENDPOINTS (Keep for backward compatibility)
 // 1. LIKE POST (WITH TRANSACTION)
 export const likePost = catchAsync(async (req, res, next) => {
   const { id: postId } = req.params;
@@ -234,6 +278,7 @@ export const unlikePost = catchAsync(async (req, res, next) => {
 
   successResponse(res, "Post unliked successfully");
 });
+
 /* ===========================
    ADVANCED QUERIES - GET POSTS WITH STATS
 =========================== */

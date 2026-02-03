@@ -39,7 +39,15 @@ const Like = sequelize.define("Like", {
         unique_like: {
             fields: ['userId', 'postId']
         }
-    }
+    },
+
+    // Database indexes for performance optimization
+    indexes: [
+        { fields: ['postId'] },                  // Get post's likes count
+        { fields: ['userId'] },                  // Get user's liked posts
+        { fields: ['userId', 'postId'], unique: true }, // Prevent duplicate likes
+        { fields: ['deletedAt'] }                // Paranoid queries (soft deletes)
+    ]
 });
 
 // Export the Like model so it can be used in other files

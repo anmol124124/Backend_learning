@@ -47,7 +47,12 @@ export const getPostComments = catchAsync(async (req, res, next) => {
         model: Comment,
         as: "replies",
       },
+      {
+        model: User,
+        attributes: ["id", "username"]  // Only fetch needed fields
+      }
     ],
+    order: [['createdAt', 'ASC']]  // Oldest comments first
   });
 
   successResponse(res, "All comments fetched successfully", comments);
