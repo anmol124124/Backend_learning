@@ -37,6 +37,9 @@ export const paginatePosts = catchAsync(async (req, res, next) => {
     ? { title: { [Op.iLike]: `%${search}%` } }
     : {};
 
+  // Get current user ID if authenticated
+  const currentUserId = req.user?.userId;
+
   const { rows: posts, count } = await Post.findAndCountAll({
     where: whereCondition,
     limit,
@@ -49,11 +52,16 @@ export const paginatePosts = catchAsync(async (req, res, next) => {
       {
         model: Comment,
         attributes: []  // Don't fetch comment data, just count
+      },
+      {
+        model: Like,
+        attributes: []  // Don't fetch like data, just count
       }
     ],
     attributes: {
       include: [
-        [sequelize.fn('COUNT', sequelize.col('Comments.id')), 'commentCount']
+        [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Comments.id'))), 'commentCount'],
+        [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Likes.id'))), 'likeCount']
       ]
     },
     group: ['Post.id', 'User.id'],
@@ -61,10 +69,26 @@ export const paginatePosts = catchAsync(async (req, res, next) => {
     order: [["createdAt", "DESC"]],
   });
 
-  // Format the response to include commentCount as a number
-  const formattedPosts = posts.map(post => ({
-    ...post.toJSON(),
-    commentCount: parseInt(post.dataValues.commentCount) || 0
+  // For each post, check if current user has liked it
+  const formattedPosts = await Promise.all(posts.map(async (post) => {
+    let isLiked = false;
+
+    if (currentUserId) {
+      const userLike = await Like.findOne({
+        where: {
+          postId: post.id,
+          userId: currentUserId
+        }
+      });
+      isLiked = !!userLike;
+    }
+
+    return {
+      ...post.toJSON(),
+      commentCount: parseInt(post.dataValues.commentCount) || 0,
+      likeCount: parseInt(post.dataValues.likeCount) || 0,
+      isLiked
+    };
   }));
 
   successResponse(res, "Posts fetched successfully", {
@@ -91,35 +115,82 @@ export const getAllPosts = catchAsync(async (req, res, next) => {
 
   logMetrics.dbHits++;
 
+  const currentUserId = req.user?.userId;
+
   const posts = await Post.findAll({
-    include: {
-      model: User,
-      attributes: ["id", "username", "email"],
-    },
+    include: [
+      {
+        model: User,
+        attributes: ["id", "username", "email"],
+      },
+      {
+        model: Like,
+        attributes: ["userId"]
+      }
+    ],
     order: [["createdAt", "DESC"]],
   });
 
-  await redisClient.set("posts:all", JSON.stringify(posts), { EX: 60 });
+  // Add isLiked and likeCount for each post
+  const formattedPosts = posts.map(post => {
+    const postData = post.toJSON();
+    let isLiked = false;
 
-  successResponse(res, "Posts fetched successfully", posts);
+    if (currentUserId && postData.Likes) {
+      isLiked = postData.Likes.some(like => like.userId === currentUserId);
+    }
+
+    return {
+      ...postData,
+      likeCount: postData.Likes?.length || 0,
+      isLiked,
+      Likes: undefined // Remove Likes array
+    };
+  });
+
+  await redisClient.set("posts:all", JSON.stringify(formattedPosts), { EX: 60 });
+
+  successResponse(res, "Posts fetched successfully", formattedPosts);
 });
 
 /* ===========================
    GET POST BY ID
 =========================== */
 export const getPostById = catchAsync(async (req, res, next) => {
+  const currentUserId = req.user?.userId;
+
   const post = await Post.findByPk(req.params.id, {
-    include: {
-      model: User,
-      attributes: ["id", "username", "email"],
-    },
+    include: [
+      {
+        model: User,
+        attributes: ["id", "username", "email"],
+      },
+      {
+        model: Like,
+        attributes: ["id", "userId"]
+      }
+    ],
   });
 
   if (!post) {
     return next(new AppError("Post not found", 404));
   }
 
-  successResponse(res, "Post fetched successfully", post);
+  // Check if current user has liked this post
+  let isLiked = false;
+  if (currentUserId && post.Likes) {
+    isLiked = post.Likes.some(like => like.userId === currentUserId);
+  }
+
+  const postData = post.toJSON();
+  const responseData = {
+    ...postData,
+    likeCount: post.Likes?.length || 0,
+    isLiked,
+    Likes: undefined // Remove Likes array from response
+  };
+
+  successResponse(res, "Post fetched successfully", responseData);
 });
 
 /* ===========================
@@ -249,6 +320,9 @@ export const toggleLike = catchAsync(async (req, res, next) => {
       await Like.create({ userId, postId }, { transaction: t });
     }
   });
+
+  // Invalidate cache after like/unlike
+  await redisClient.del("posts:all");
 
   // Return the new state
   const isLiked = existingLike ? (existingLike.deletedAt ? true : false) : true;

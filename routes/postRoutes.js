@@ -1,5 +1,6 @@
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
+import optionalAuth from "../middleware/optionalAuth.js";
 import { allowRoles } from "../middleware/roleMiddleware.js";
 
 import {
@@ -78,7 +79,7 @@ router.post("/", authMiddleware, createLimiter, validate(createPostSchema), crea
  *       200:
  *         description: List of all posts
  */
-router.get("/", getAllPosts);
+router.get("/", optionalAuth, getAllPosts);
 
 /**
  * @swagger
@@ -101,7 +102,7 @@ router.get("/", getAllPosts);
  *       200:
  *         description: Paginated posts list
  */
-router.get("/paginate", validateQuery(paginationSchema), paginatePosts);
+router.get("/paginate", optionalAuth, validateQuery(paginationSchema), paginatePosts);
 
 
 /**
@@ -142,7 +143,7 @@ router.get("/users/:id/posts", getUserPosts);
  *       404:
  *         description: Post not found
  */
-router.get("/:id", getPostById);
+router.get("/:id", optionalAuth, getPostById);
 
 /**
  * @swagger
