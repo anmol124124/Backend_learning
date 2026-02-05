@@ -30,6 +30,12 @@ const Post = sequelize.define("Post", {
     allowNull: false
   },
 
+  // -------- IMAGE (optional) --------
+  image: {
+    type: DataTypes.STRING,      // Cloudinary URL
+    allowNull: true              // Images are optional
+  },
+
   // -------- USER ID (kis user ne post banayi?) --------
   userId: {
     type: DataTypes.INTEGER,     // number hoga

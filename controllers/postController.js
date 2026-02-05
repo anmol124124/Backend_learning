@@ -11,10 +11,10 @@ import AppError from "../utils/AppError.js";
    CREATE POST
 =========================== */
 export const createPost = catchAsync(async (req, res, next) => {
-  const { title, content } = req.body;
+  const { title, content, image } = req.body;
   const userId = req.user.userId;
 
-  const newPost = await Post.create({ title, content, userId });
+  const newPost = await Post.create({ title, content, image, userId });
 
   await redisClient.del("posts:all");
 
@@ -149,8 +149,11 @@ export const updatePost = catchAsync(async (req, res, next) => {
     return next(new AppError("Unauthorized", 403));
   }
 
-  post.title = req.body.title;
-  post.content = req.body.content;
+  // Update only provided fields
+  if (req.body.title !== undefined) post.title = req.body.title;
+  if (req.body.content !== undefined) post.content = req.body.content;
+  if (req.body.image !== undefined) post.image = req.body.image;
+
   await post.save();
 
   await redisClient.del("posts:all");

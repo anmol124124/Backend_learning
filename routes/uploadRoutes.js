@@ -1,5 +1,6 @@
 import express from "express";
 import upload from "../middleware/upload.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 
 import {
   uploadSingleFile,
@@ -21,6 +22,8 @@ const router = express.Router();
  *   post:
  *     summary: Upload a single file
  *     tags: [Upload]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -41,6 +44,7 @@ const router = express.Router();
  */
 router.post(
   "/single",
+  authMiddleware,
   upload.single("file"),
   uploadSingleFile
 );
@@ -51,6 +55,8 @@ router.post(
  *   post:
  *     summary: Upload multiple files
  *     tags: [Upload]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -73,6 +79,7 @@ router.post(
  */
 router.post(
   "/multiple",
+  authMiddleware,
   upload.array("files", 5),
   uploadMultipleFiles
 );

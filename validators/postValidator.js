@@ -70,6 +70,14 @@ export const createPostSchema = Joi.object({
             'string.max': 'Content must not exceed 10000 characters',
             'any.required': 'Content is required',
         }),
+
+    image: Joi.string()
+        .uri()
+        .allow(null, '')
+        .optional()
+        .messages({
+            'string.uri': 'Image must be a valid URL',
+        }),
 });
 
 // Schema for updating a post
@@ -83,8 +91,16 @@ export const updatePostSchema = Joi.object({
         .min(10)
         .max(10000)
         .optional(),
+
+    image: Joi.string()
+        .uri()
+        .allow(null, '')
+        .optional()
+        .messages({
+            'string.uri': 'Image must be a valid URL',
+        }),
 }).min(1).messages({
-    'object.min': 'At least one field (title or content) must be provided',
+    'object.min': 'At least one field (title, content, or image) must be provided',
 });
 
 // Schema for pagination
