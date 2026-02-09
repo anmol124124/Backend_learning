@@ -91,6 +91,19 @@ const User = sequelize.define("User", {         // "User" naam ka table banayega
     // Token expires after 1 hour for security
   },
 
+  // ---------------------------------------------------------
+  // PROFILE FIELDS
+  // ---------------------------------------------------------
+  avatar: {
+    type: DataTypes.STRING,                     // URL to profile picture (Cloudinary)
+    allowNull: true,                            // Optional - users may not upload avatar
+  },
+
+  bio: {
+    type: DataTypes.TEXT,                       // User's bio/about section
+    allowNull: true,                            // Optional
+  },
+
 
 }, {
   timestamps: true,                              // createdAt & updatedAt automatically add honge
