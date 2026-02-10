@@ -1,4 +1,4 @@
-import { User, Post, Comment, Like } from "../models/associations.js";
+import { User, Post, Comment, Like, Tag, PostTag } from "../models/associations.js";
 import redisClient from "../config/redis.js";
 import sequelize from "../config/db.js";
 import { Op } from "sequelize";
@@ -6,19 +6,33 @@ import { successResponse } from "../utils/apiResponse.js";
 import { logMetrics } from "../utils/performanceMetrics.js";
 import catchAsync from "../utils/catchAsync.js";
 import AppError from "../utils/AppError.js";
+import { createOrGetTags } from "./tagController.js";
 
 /* ===========================
    CREATE POST
 =========================== */
 export const createPost = catchAsync(async (req, res, next) => {
-  const { title, content, image } = req.body;
+  const { title, content, image, tags } = req.body;
   const userId = req.user.userId;
 
   const newPost = await Post.create({ title, content, image, userId });
 
+  // Handle tags if provided
+  if (tags && tags.length > 0) {
+    const tagRecords = await createOrGetTags(tags);
+    await newPost.setTags(tagRecords);
+  }
+
+  // Fetch the post with tags to return
+  const postWithTags = await Post.findByPk(newPost.id, {
+    include: [
+      { model: Tag, as: 'tags', attributes: ['id', 'name', 'slug'], through: { attributes: [] } }
+    ]
+  });
+
   await redisClient.del("posts:all");
 
-  successResponse(res, "Post created successfully", newPost);
+  successResponse(res, "Post created successfully", postWithTags);
 });
 
 /* ===========================
@@ -50,6 +64,12 @@ export const paginatePosts = catchAsync(async (req, res, next) => {
         attributes: ["id", "username", "email"],
       },
       {
+        model: Tag,
+        as: 'tags',
+        attributes: ['id', 'name', 'slug'],
+        through: { attributes: [] }
+      },
+      {
         model: Comment,
         attributes: []  // Don't fetch comment data, just count
       },
@@ -64,7 +84,7 @@ export const paginatePosts = catchAsync(async (req, res, next) => {
         [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Likes.id'))), 'likeCount']
       ]
     },
-    group: ['Post.id', 'User.id'],
+    group: ['Post.id', 'User.id', 'tags.id', 'tags.PostTag.postId', 'tags.PostTag.tagId'],
     subQuery: false,
     order: [["createdAt", "DESC"]],
   });

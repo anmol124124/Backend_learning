@@ -78,6 +78,18 @@ export const createPostSchema = Joi.object({
         .messages({
             'string.uri': 'Image must be a valid URL',
         }),
+
+    tags: Joi.array()
+        .items(
+            Joi.string()
+                .trim()
+                .min(1)
+                .max(50)
+                .pattern(/^[a-zA-Z0-9\s-]+$/)
+        )
+        .max(10)
+        .unique()
+        .optional(),
 });
 
 // Schema for updating a post

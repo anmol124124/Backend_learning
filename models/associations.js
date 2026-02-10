@@ -5,6 +5,8 @@ import User from "./User.js";
 import Post from "./Post.js";
 import Comment from "./Comment.js";
 import Like from "./Like.js";
+import Tag from "./Tag.js";
+import PostTag from "./PostTag.js";
 
 // ---------------------------------------------------------
 // USER → POSTS (1 user = many posts)
@@ -71,6 +73,28 @@ Post.hasMany(Like, { foreignKey: "postId" });
 Like.belongsTo(Post, { foreignKey: "postId" });
 
 // ---------------------------------------------------------
+// POST ↔ TAGS (Many-to-Many)
+// ---------------------------------------------------------
+Post.belongsToMany(Tag, {
+  through: PostTag,
+  foreignKey: "postId",
+  as: "tags"
+});
+
+Tag.belongsToMany(Post, {
+  through: PostTag,
+  foreignKey: "tagId",
+  as: "posts"
+});
+
+// Direct associations for PostTag
+Post.hasMany(PostTag, { foreignKey: "postId" });
+PostTag.belongsTo(Post, { foreignKey: "postId" });
+
+Tag.hasMany(PostTag, { foreignKey: "tagId" });
+PostTag.belongsTo(Tag, { foreignKey: "tagId" });
+
+// ---------------------------------------------------------
 // EXPORT ALL MODELS (ONLY ONCE)
 // ---------------------------------------------------------
-export { User, Post, Comment, Like };
+export { User, Post, Comment, Like, Tag, PostTag };
