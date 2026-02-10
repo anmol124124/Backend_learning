@@ -104,6 +104,15 @@ const User = sequelize.define("User", {         // "User" naam ka table banayega
     allowNull: true,                            // Optional
   },
 
+  // ---------------------------------------------------------
+  // ADMIN FIELDS
+  // ---------------------------------------------------------
+  isBanned: {
+    type: DataTypes.BOOLEAN,                    // Whether user is banned
+    defaultValue: false,                        // Default: not banned
+    allowNull: false,
+  },
+
 
 }, {
   timestamps: true,                              // createdAt & updatedAt automatically add honge

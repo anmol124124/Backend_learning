@@ -22,6 +22,7 @@ import postRoutes from "./routes/postRoutes.js";
 import commentRoutes from "./routes/commentRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 // Models
 import "./models/User.js";
@@ -106,6 +107,7 @@ app.use("/api/v1/upload", uploadRoutes);
 app.use("/api/v1/health", healthRoutes);
 app.use("/api/v1/csrf", csrfRoutes);
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/admin", adminRoutes);
 
 
 // Swagger
