@@ -25,6 +25,7 @@ import userRoutes from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import tagRoutes from "./routes/tagRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
+import bookmarkRoutes from "./routes/bookmarkRoutes.js";
 
 // Models
 import "./models/User.js";
@@ -112,7 +113,7 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/tags", tagRoutes);
 app.use("/api/v1/categories", categoryRoutes);
-
+app.use("/api/v1/bookmarks", bookmarkRoutes);
 
 // Swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -137,23 +138,38 @@ app.set("io", io);
 // ---------------------------------------------------------
 const startServer = async () => {
   try {
+    console.log('\n' + '='.repeat(60));
+    console.log('🚀  STARTING SERVER...');
+    console.log('='.repeat(60) + '\n');
+
     await connectDB();
+    console.log('✅  PostgreSQL connected successfully');
     logger.info("PostgreSQL connected successfully");
 
     await connectRedis();
+    console.log('✅  Redis connected successfully');
     logger.info("Redis connected successfully");
 
     // initialize socket
     initSocket(server);
+    console.log('⚡  Socket.IO initialized');
 
     // start server
     const PORT = config.port;
     server.listen(PORT, () => {
+      console.log('\n' + '='.repeat(60));
+      console.log(`🎉  SERVER RUNNING ON PORT ${PORT}`);
+      console.log(`🌐  Local: http://localhost:${PORT}`);
+      console.log(`📚  API Docs: http://localhost:${PORT}/api-docs`);
+      console.log('='.repeat(60) + '\n');
       logger.info(`Server running on port ${PORT}`);
     });
 
     setInterval(logMetrics, 100000);
   } catch (error) {
+    console.log('\n' + '='.repeat(60));
+    console.log('❌  SERVER STARTUP FAILED');
+    console.log('='.repeat(60) + '\n');
     logger.error("Server startup failed", error);
     process.exit(1);
   }
