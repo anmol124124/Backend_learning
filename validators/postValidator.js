@@ -90,6 +90,17 @@ export const createPostSchema = Joi.object({
         .max(10)
         .unique()
         .optional(),
+
+    categoryId: Joi.number()
+        .integer()
+        .positive()
+        .optional()
+        .allow(null)
+        .messages({
+            'number.base': 'Category ID must be a number',
+            'number.integer': 'Category ID must be an integer',
+            'number.positive': 'Category ID must be positive',
+        }),
 });
 
 // Schema for updating a post

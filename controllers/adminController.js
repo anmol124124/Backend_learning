@@ -3,10 +3,7 @@
 // ---------------------------------------------------------
 // Handles admin operations: user management, content moderation, analytics
 
-import User from "../models/User.js";
-import Post from "../models/Post.js";
-import Like from "../models/Like.js";
-import Comment from "../models/Comment.js";
+import { User, Post, Like, Comment, Category } from "../models/associations.js";
 import catchAsync from "../utils/catchAsync.js";
 import AppError from "../utils/AppError.js";
 import { successResponse } from "../utils/apiResponse.js";
@@ -213,6 +210,9 @@ export const getAllPostsAdmin = catchAsync(async (req, res, next) => {
         where: whereClause,
         include: [
             { model: User, attributes: ['id', 'username', 'email'] },
+            { model: Category, as: 'category', attributes: ['id', 'name', 'icon', 'color'] },
+            { model: Comment, attributes: [] },
+            { model: Like, attributes: [] }
         ],
         attributes: {
             include: [
@@ -220,12 +220,7 @@ export const getAllPostsAdmin = catchAsync(async (req, res, next) => {
                 [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Likes.id'))), 'likeCount']
             ]
         },
-        include: [
-            { model: User, attributes: ['id', 'username', 'email'] },
-            { model: Comment, attributes: [] },
-            { model: Like, attributes: [] }
-        ],
-        group: ['Post.id', 'User.id'],
+        group: ['Post.id', 'User.id', 'category.id'],
         limit: parseInt(limit),
         offset: parseInt(offset),
         order: [['createdAt', 'DESC']],

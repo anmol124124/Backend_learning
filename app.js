@@ -24,6 +24,7 @@ import uploadRoutes from "./routes/uploadRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import tagRoutes from "./routes/tagRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
 
 // Models
 import "./models/User.js";
@@ -110,6 +111,7 @@ app.use("/api/v1/csrf", csrfRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/tags", tagRoutes);
+app.use("/api/v1/categories", categoryRoutes);
 
 
 // Swagger

@@ -7,6 +7,7 @@ import Comment from "./Comment.js";
 import Like from "./Like.js";
 import Tag from "./Tag.js";
 import PostTag from "./PostTag.js";
+import Category from "./Category.js";
 
 // ---------------------------------------------------------
 // USER → POSTS (1 user = many posts)
@@ -95,6 +96,19 @@ Tag.hasMany(PostTag, { foreignKey: "tagId" });
 PostTag.belongsTo(Tag, { foreignKey: "tagId" });
 
 // ---------------------------------------------------------
+// CATEGORY → POSTS (1 category = many posts)
+// ---------------------------------------------------------
+Category.hasMany(Post, {
+  foreignKey: "categoryId",
+  onDelete: "SET NULL"
+});
+
+Post.belongsTo(Category, {
+  foreignKey: "categoryId",
+  as: "category"
+});
+
+// ---------------------------------------------------------
 // EXPORT ALL MODELS (ONLY ONCE)
 // ---------------------------------------------------------
-export { User, Post, Comment, Like, Tag, PostTag };
+export { User, Post, Comment, Like, Tag, PostTag, Category };

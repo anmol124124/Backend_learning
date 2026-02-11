@@ -43,6 +43,10 @@ export const connectDB = async () => {
   try {
     await sequelize.authenticate();
     logger.info(`Database connected successfully ✔`);
+
+    // Sync models with database (create/update tables)
+    await sequelize.sync({ alter: true });
+    logger.info(`Database models synced successfully 🔄`);
   } catch (error) {
     logger.info(`Database connection failed ❌`, error);
   }

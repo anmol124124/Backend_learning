@@ -1,4 +1,4 @@
-import { User, Post, Comment, Like, Tag, PostTag } from "../models/associations.js";
+import { User, Post, Comment, Like, Tag, PostTag, Category } from "../models/associations.js";
 import redisClient from "../config/redis.js";
 import sequelize from "../config/db.js";
 import { Op } from "sequelize";
@@ -70,6 +70,11 @@ export const paginatePosts = catchAsync(async (req, res, next) => {
         through: { attributes: [] }
       },
       {
+        model: Category,
+        as: 'category',
+        attributes: ['id', 'name', 'icon', 'color']
+      },
+      {
         model: Comment,
         attributes: []  // Don't fetch comment data, just count
       },
@@ -84,7 +89,7 @@ export const paginatePosts = catchAsync(async (req, res, next) => {
         [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Likes.id'))), 'likeCount']
       ]
     },
-    group: ['Post.id', 'User.id', 'tags.id', 'tags.PostTag.postId', 'tags.PostTag.tagId'],
+    group: ['Post.id', 'User.id', 'tags.id', 'tags.PostTag.postId', 'tags.PostTag.tagId', 'category.id'],
     subQuery: false,
     order: [["createdAt", "DESC"]],
   });
@@ -183,7 +188,18 @@ export const getPostById = catchAsync(async (req, res, next) => {
     include: [
       {
         model: User,
-        attributes: ["id", "username", "email"],
+        attributes: ["id", "username", "email", "avatar"],
+      },
+      {
+        model: Tag,
+        as: 'tags',
+        attributes: ['id', 'name', 'slug'],
+        through: { attributes: [] }
+      },
+      {
+        model: Category,
+        as: 'category',
+        attributes: ['id', 'name', 'icon', 'color']
       },
       {
         model: Like,

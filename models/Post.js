@@ -41,6 +41,17 @@ const Post = sequelize.define("Post", {
     type: DataTypes.INTEGER,     // number hoga
     allowNull: false             // ye empty nahi ho sakta
     // ❗Later hum isko USERS TABLE se link bhi karenge (relation)
+  },
+
+  // -------- CATEGORY ID (post ka category) --------
+  categoryId: {
+    type: DataTypes.INTEGER,     // number hoga
+    allowNull: true,             // optional - post can exist without category
+    references: {
+      model: 'Categories',
+      key: 'id'
+    },
+    onDelete: 'SET NULL'         // agar category delete ho to null set kar do
   }
 
 }, {
