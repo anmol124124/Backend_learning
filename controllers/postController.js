@@ -1,4 +1,4 @@
-import { User, Post, Comment, Like, Tag, PostTag, Category } from "../models/associations.js";
+import { User, Post, Comment, Like, Tag, PostTag, Category, Bookmark } from "../models/associations.js";
 import redisClient from "../config/redis.js";
 import sequelize from "../config/db.js";
 import { Op } from "sequelize";
@@ -94,9 +94,10 @@ export const paginatePosts = catchAsync(async (req, res, next) => {
     order: [["createdAt", "DESC"]],
   });
 
-  // For each post, check if current user has liked it
+  // For each post, check if current user has liked and bookmarked it
   const formattedPosts = await Promise.all(posts.map(async (post) => {
     let isLiked = false;
+    let isBookmarked = false;
 
     if (currentUserId) {
       const userLike = await Like.findOne({
@@ -106,13 +107,22 @@ export const paginatePosts = catchAsync(async (req, res, next) => {
         }
       });
       isLiked = !!userLike;
+
+      const userBookmark = await Bookmark.findOne({
+        where: {
+          postId: post.id,
+          userId: currentUserId
+        }
+      });
+      isBookmarked = !!userBookmark;
     }
 
     return {
       ...post.toJSON(),
       commentCount: parseInt(post.dataValues.commentCount) || 0,
       likeCount: parseInt(post.dataValues.likeCount) || 0,
-      isLiked
+      isLiked,
+      isBookmarked
     };
   }));
 

@@ -8,6 +8,7 @@ import Like from "./Like.js";
 import Tag from "./Tag.js";
 import PostTag from "./PostTag.js";
 import Category from "./Category.js";
+import Bookmark from "./Bookmark.js";
 
 // ---------------------------------------------------------
 // USER → POSTS (1 user = many posts)
@@ -109,6 +110,24 @@ Post.belongsTo(Category, {
 });
 
 // ---------------------------------------------------------
+// USER → BOOKMARKS (Many-to-Many via Bookmark)
+// ---------------------------------------------------------
+User.belongsToMany(Post, {
+  through: Bookmark,
+  as: 'bookmarkedPosts',
+  foreignKey: 'userId',
+  otherKey: 'postId'
+});
+
+Post.belongsToMany(User, {
+  through: Bookmark,
+  as: 'bookmarkedBy',
+  foreignKey: 'postId',
+  otherKey: 'userId'
+});
+
+// ---------------------------------------------------------
 // EXPORT ALL MODELS (ONLY ONCE)
 // ---------------------------------------------------------
-export { User, Post, Comment, Like, Tag, PostTag, Category };
+export { User, Post, Comment, Like, Tag, PostTag, Category, Bookmark };
+
