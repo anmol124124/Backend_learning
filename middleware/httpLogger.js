@@ -1,40 +1,39 @@
-// Morgan library import kar rahe hain
-// Morgan HTTP requests (GET, POST, etc.) ke logs banata hai
+// ---------------------------------------------------------
+// HTTP REQUEST LOGGER MIDDLEWARE
+// ---------------------------------------------------------
+// This middleware logs every HTTP request (GET, POST, etc.) to both
+// the console and log files using Morgan + Winston
+
+// Import Morgan - a library that automatically logs HTTP request details
 import morgan from "morgan";
 
-// Apna custom Winston logger import kar rahe hain
-// Ye logger terminal + file dono me logs likhta hai
+// Import our custom Winston logger (writes to console + files)
 import logger from "../utils/logger.js";
 
-// Morgan ko Winston ke saath connect kar rahe hain
-// Taaki HTTP request logs bhi Winston ke through jaye
+// Create the HTTP logger by connecting Morgan with Winston
 const httpLogger = morgan(
 
-  // Ye format batata hai ki log me kya-kya aayega
-  // :method        → GET / POST
-  // :url           → request ka URL
-  // :status        → response status code (200, 404, 500)
-  // :response-time → request ko kitna time laga (ms me)
+  // Define the log format - what information to include in each log line:
+  // :method        → HTTP method (GET, POST, PUT, DELETE)
+  // :url           → The URL that was requested
+  // :status        → Response status code (200 = OK, 404 = Not Found, 500 = Error)
+  // :response-time → How long the request took in milliseconds
   ":method :url :status :response-time ms",
 
   {
-    // Morgan normally console.log karta hai
-    // Par hum uska output apne Winston logger me bhej rahe hain
+    // Instead of Morgan's default console.log, route output through Winston
     stream: {
 
-      // Jab bhi koi HTTP request aati hai,
-      // Morgan ye write function call karta hai
+      // Morgan calls this write function for every HTTP request
       write: (message) => {
 
-        // message ke end me extra new line hoti hai
-        // trim() se us extra space ko hata dete hain
-        // logger.info() se log ko info level par save kar dete hain
+        // Remove the extra newline at the end of the message
+        // Then log it using Winston's "info" level
         logger.info(message.trim());
       },
     },
   }
 );
 
-// Is middleware ko export kar rahe hain
-// Taaki app.js / server.js me use kar sake
+// Export this middleware so it can be used in app.js
 export default httpLogger;

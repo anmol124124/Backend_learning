@@ -1,39 +1,35 @@
 // ---------------------------------------------------------
-// PASSWORD RESET MIGRATION
+// MIGRATION: Add Password Reset Fields to Users
 // ---------------------------------------------------------
-// Purpose: Add two new columns to 'users' table for password reset feature
-// Columns: resetPasswordToken, resetPasswordExpires
-// Created: 2026-01-27
-// ---------------------------------------------------------
+// Adds two new columns to the Users table for the "Forgot Password" feature:
+// 1. resetPasswordToken - stores the hashed reset token
+// 2. resetPasswordExpires - when the token expires (usually 1 hour)
 
 'use strict';
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-    // ============================================
-    // UP - This runs when you do: npm run migrate
-    // ============================================
+    // "up" runs when you apply the migration (npm run migrate)
     async up(queryInterface, Sequelize) {
 
-        // Add two new columns to the existing 'Users' table
+        // Add column to store the hashed password reset token
         await queryInterface.addColumn('Users', 'resetPasswordToken', {
-            type: Sequelize.STRING,           // Text field to store hashed reset token
-            allowNull: true,                  // Can be empty - only filled when user requests password reset
+            type: Sequelize.STRING,           // Text field for the hashed token
+            allowNull: true,                  // Empty when no reset has been requested
             comment: 'Hashed token sent to user email for password reset'
         });
 
+        // Add column to store when the reset token expires
         await queryInterface.addColumn('Users', 'resetPasswordExpires', {
-            type: Sequelize.DATE,             // Date/time field to store when token expires
-            allowNull: true,                  // Can be empty - only filled when reset token is generated
+            type: Sequelize.DATE,             // Date/time field
+            allowNull: true,                  // Empty when no reset has been requested
             comment: 'Timestamp when the reset token expires (usually 1 hour from generation)'
         });
 
         console.log('✅ Password reset fields added to Users table');
     },
 
-    // ============================================
-    // DOWN - This runs when you do: npm run migrate:undo
-    // ============================================
+    // "down" runs when you undo the migration (npm run migrate:undo)
     async down(queryInterface, Sequelize) {
 
         // Remove the columns we added (reverses the migration)

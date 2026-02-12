@@ -1,35 +1,42 @@
-// tests/setup.js
-// Set test environment
+// ---------------------------------------------------------
+// TEST SETUP / CONFIGURATION
+// ---------------------------------------------------------
+// This file runs BEFORE all tests to set up the test environment
+// It configures environment variables with test-specific values
+// so tests don't affect the real database or services
+
+// Set environment to "test" (affects error handling, logging, etc.)
 process.env.NODE_ENV = 'test';
 
-// JWT Secrets
-process.env.JWT_ACCESS_SECRET = 'test-access-secret-key';
-process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-key';
-process.env.SESSION_SECRET = 'test-session-secret';
+// JWT Secrets for testing (different from production secrets for security)
+process.env.JWT_ACCESS_SECRET = 'test-access-secret-key';   // Secret to sign access tokens
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-key'; // Secret to sign refresh tokens
+process.env.SESSION_SECRET = 'test-session-secret';          // Secret for session management
 
-// Database Configuration (use test database)
-process.env.DB_NAME = 'test_database';
-process.env.DB_USER = 'postgres';
-process.env.DB_PASSWORD = 'admin123';
-process.env.DB_HOST = 'localhost';
-process.env.DB_PORT = '5433';
+// Database Configuration (uses a separate test database!)
+process.env.DB_NAME = 'test_database';        // Test database name (not the real one)
+process.env.DB_USER = 'postgres';             // Database username
+process.env.DB_PASSWORD = 'admin123';         // Database password
+process.env.DB_HOST = 'localhost';            // Database host
+process.env.DB_PORT = '5433';                 // Database port
 
-// Redis Configuration
+// Redis Configuration for tests
 process.env.REDIS_URL = 'redis://localhost:6379';
 
-// Other configs
-process.env.PORT = '3001'; // Different port for tests
-process.env.TZ = 'Asia/Kolkata';
-process.env.FRONTEND_URL = 'http://localhost:5173';
+// Other test-specific configs
+process.env.PORT = '3001';                    // Different port so it doesn't conflict with dev server
+process.env.TZ = 'Asia/Kolkata';              // Timezone
+process.env.FRONTEND_URL = 'http://localhost:5173';  // Frontend URL for CORS
 
-// Set test timeout (30 seconds for integration tests)
+// Give integration tests more time (30 seconds) since they hit real databases
 jest.setTimeout(30000);
 
-// Suppress console logs during tests (optional)
+// Optionally suppress console logs during tests to keep output clean
+// Uncomment the lines below if you want quieter test output
 // global.console = {
 //   ...console,
-//   log: jest.fn(),
-//   debug: jest.fn(),
-//   info: jest.fn(),
-//   warn: jest.fn(),
+//   log: jest.fn(),      // Suppress console.log
+//   debug: jest.fn(),    // Suppress console.debug
+//   info: jest.fn(),     // Suppress console.info
+//   warn: jest.fn(),     // Suppress console.warn
 // };

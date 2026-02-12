@@ -1,77 +1,82 @@
 // ---------------------------------------------------------
 // CATEGORY MODEL
 // ---------------------------------------------------------
-// Predefined categories for posts (Technology, Lifestyle, etc.)
+// This file defines the "Categories" table in the database
+// Categories are predefined labels for posts (e.g., Technology, Lifestyle, Sports)
 
+// Importing DataTypes to define what kind of data each column stores
 import { DataTypes } from "sequelize";
+// Importing the database connection
 import sequelize from "../config/db.js";
 
+// Define the Category model (creates the "Categories" table)
 const Category = sequelize.define("Category", {
 
-    // Primary key
+    // Primary key: unique ID for each category
     id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true,
+        type: DataTypes.INTEGER,        // Number type
+        autoIncrement: true,            // Auto increases (1, 2, 3...)
+        primaryKey: true,               // Main unique identifier
     },
 
-    // Category name (e.g., "Technology", "Lifestyle")
+    // Category display name (e.g., "Technology", "Lifestyle")
     name: {
-        type: DataTypes.STRING(50),
-        allowNull: false,
-        unique: true,
+        type: DataTypes.STRING(50),     // Short text, max 50 characters
+        allowNull: false,               // Name is required
+        unique: true,                   // No two categories can have the same name
         validate: {
-            notEmpty: true,
-            len: [2, 50],
+            notEmpty: true,             // Can't be an empty string
+            len: [2, 50],               // Must be between 2 and 50 characters
         },
     },
 
-    // URL-friendly slug (e.g., "technology", "lifestyle")
+    // URL-friendly version of the name (e.g., "technology", "web-development")
     slug: {
-        type: DataTypes.STRING(50),
-        allowNull: false,
-        unique: true,
+        type: DataTypes.STRING(50),     // Short text, max 50 characters
+        allowNull: false,               // Slug is required
+        unique: true,                   // No duplicate slugs allowed
         validate: {
-            notEmpty: true,
-            len: [2, 50],
-            is: /^[a-z0-9-]+$/i,
+            notEmpty: true,             // Can't be empty
+            len: [2, 50],               // Between 2-50 characters
+            is: /^[a-z0-9-]+$/i,        // Only letters, numbers, and hyphens allowed
         },
     },
 
-    // Category description
+    // Optional description of what this category is about
     description: {
-        type: DataTypes.TEXT,
-        allowNull: true,
+        type: DataTypes.TEXT,           // Long text (no character limit)
+        allowNull: true,                // Description is optional
     },
 
-    // Emoji icon (e.g., "💻", "🌟")
+    // Emoji icon for UI display (e.g., "💻" for Technology)
     icon: {
-        type: DataTypes.STRING(10),
-        allowNull: true,
+        type: DataTypes.STRING(10),     // Short text for emoji
+        allowNull: true,                // Icon is optional
     },
 
-    // Hex color code (e.g., "#3b82f6")
+    // Hex color code for UI styling (e.g., "#3b82f6" for blue)
     color: {
-        type: DataTypes.STRING(7),
-        allowNull: true,
+        type: DataTypes.STRING(7),      // Exactly 7 characters (#RRGGBB)
+        allowNull: true,                // Color is optional
         validate: {
-            is: /^#[0-9A-Fa-f]{6}$/,
+            is: /^#[0-9A-Fa-f]{6}$/,    // Must be a valid hex color (e.g., #ff5733)
         },
     },
 
-    // Number of posts in this category
+    // Counter of how many posts belong to this category
     postCount: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0,
-        allowNull: false,
+        type: DataTypes.INTEGER,        // Number type
+        defaultValue: 0,                // Starts at 0 when created
+        allowNull: false,               // Must always have a value
         validate: {
-            min: 0,
+            min: 0,                     // Can't be negative
         },
     },
 
 }, {
-    timestamps: true,
-    tableName: "Categories",
+    timestamps: true,                   // Automatically adds createdAt and updatedAt columns
+    tableName: "Categories",            // Explicit table name in the database
 });
 
+// Export the Category model so other files can use it
 export default Category;

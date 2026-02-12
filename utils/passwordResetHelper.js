@@ -1,119 +1,119 @@
 // ---------------------------------------------------------
 // PASSWORD RESET HELPER FUNCTIONS
 // ---------------------------------------------------------
-// Purpose: Reusable functions for password reset feature
-// Used by: authController.js (forgotPassword, resetPassword)
-// ---------------------------------------------------------
+// These functions handle the password reset flow:
+// 1. Generate a secure reset token
+// 2. Hash it for safe database storage
+// 3. Find a user by their reset token
+// 4. Clear the token after use
+// 5. Build the reset URL for the email
 
+// Import crypto for generating random tokens and hashing
 import crypto from "crypto";
+// Import Sequelize operators for database queries
 import { Op } from "sequelize";
+// Import User model to find/update users
 import User from "../models/User.js";
+// Import custom error class
 import AppError from "./AppError.js";
 
 // ================================================================
 // 1. GENERATE RESET TOKEN
 // ================================================================
-// Purpose: Create a random token and its hashed version
-// Returns: { token, hashedToken, expiresAt }
+// Creates three things:
+// - token: the raw token sent to the user's email
+// - hashedToken: a hashed version stored safely in the database
+// - expiresAt: when the token stops being valid (1 hour)
 
 export const generateResetToken = () => {
-    // ---------------------------------------------------------
-    // STEP 1: Generate random token (32 bytes = 64 hex chars)
-    // ---------------------------------------------------------
-    // This creates a random string like: "a7f3e9d2c1b4a8f6..."
+    // Generate 32 random bytes and convert to a 64-character hex string
+    // Example: "a7f3e9d2c1b4a8f6e3d2c9b8a7f6e5d4..."
     const token = crypto.randomBytes(32).toString('hex');
 
-    // ---------------------------------------------------------
-    // STEP 2: Hash the token using SHA-256
-    // ---------------------------------------------------------
-    // Why? So if database leaks, attackers can't use the tokens
+    // Hash the token using SHA-256 algorithm
+    // We store the HASHED version in the database for security
+    // (If database is compromised, attackers can't use the hashed token)
     const hashedToken = crypto
         .createHash('sha256')
         .update(token)
         .digest('hex');
 
-    // ---------------------------------------------------------
-    // STEP 3: Calculate expiry time (1 hour from now)
-    // ---------------------------------------------------------
-    const expiresAt = Date.now() + 3600000; // 3600000 ms = 1 hour
+    // Set expiry to 1 hour from now (3600000 milliseconds = 1 hour)
+    const expiresAt = Date.now() + 3600000;
 
     // Return all three values
     return {
-        token,              // Unhashed - send in email
-        hashedToken,        // Hashed - store in database
-        expiresAt          // When token expires
+        token,              // Unhashed version → sent in the email link
+        hashedToken,        // Hashed version → stored in the database
+        expiresAt          // Expiry timestamp → also stored in database
     };
 };
 
 // ================================================================
 // 2. HASH TOKEN
 // ================================================================
-// Purpose: Hash a token (used when user submits reset token)
-// Why? We store hashed tokens in DB, so we need to hash incoming token to compare
+// Hashes a token using SHA-256 (same algorithm as generateResetToken)
+// Used when the user submits their token - we hash it to compare with the database
 
 export const hashToken = (token) => {
-    // Use same SHA-256 algorithm as generateResetToken
     return crypto
-        .createHash('sha256')
-        .update(token)
-        .digest('hex');
+        .createHash('sha256')          // Use SHA-256 hashing algorithm
+        .update(token)                  // Feed in the token to hash
+        .digest('hex');                 // Output as hex string
 };
 
 // ================================================================
 // 3. FIND USER BY RESET TOKEN
 // ================================================================
-// Purpose: Find user with matching token that hasn't expired
-// Returns: User object or null
-// Throws: AppError if token invalid/expired
+// Looks up a user in the database by their reset token
+// Also checks that the token hasn't expired yet
 
 export const findUserByResetToken = async (token) => {
-    // ---------------------------------------------------------
-    // STEP 1: Hash the incoming token
-    // ---------------------------------------------------------
+    // First, hash the incoming token (database stores hashed versions)
     const hashedToken = hashToken(token);
 
-    // ---------------------------------------------------------
-    // STEP 2: Find user with this hashed token
-    // ---------------------------------------------------------
-    // Also check that token hasn't expired
+    // Search for a user where:
+    // 1. Their stored reset token matches the hashed version
+    // 2. The token hasn't expired yet (expiry time is in the future)
     const user = await User.findOne({
         where: {
             resetPasswordToken: hashedToken,        // Token must match
-            resetPasswordExpires: {                 // AND not expired
-                [Op.gt]: Date.now()                   // Op.gt = Greater Than now
+            resetPasswordExpires: {
+                [Op.gt]: Date.now()                   // Op.gt = "greater than" current time
             }
         }
     });
 
-    // ---------------------------------------------------------
-    // STEP 3: Throw error if no user found
-    // ---------------------------------------------------------
+    // If no user found, the token is invalid or expired
     if (!user) {
         throw new AppError("Invalid or expired reset token", 400);
     }
 
+    // Return the found user
     return user;
 };
 
 // ================================================================
 // 4. CLEAR RESET TOKEN
 // ================================================================
-// Purpose: Clear reset token fields after successful password reset
-// Why? Makes token one-time use only (security)
+// After a successful password reset, remove the token from the database
+// This makes the token single-use (can't be used again)
 
 export const clearResetToken = async (user) => {
-    user.resetPasswordToken = null;
-    user.resetPasswordExpires = null;
-    await user.save();
+    user.resetPasswordToken = null;            // Remove the stored token
+    user.resetPasswordExpires = null;          // Remove the expiry time
+    await user.save();                         // Save changes to database
 };
 
 // ================================================================
 // 5. CREATE RESET URL
 // ================================================================
-// Purpose: Generate the reset password URL with token
-// Returns: Full URL string
+// Builds the full URL that the user clicks in their email
+// Example: http://localhost:5173/reset-password/a7f3e9d2c1b4a8f6...
 
 export const createResetURL = (token) => {
+    // Get the frontend URL from environment variables (defaults to localhost)
     const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
+    // Combine frontend URL with the reset path and token
     return `${frontendURL}/reset-password/${token}`;
 };

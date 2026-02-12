@@ -1,19 +1,32 @@
+// ---------------------------------------------------------
+// POST CONTROLLER INTEGRATION TESTS
+// ---------------------------------------------------------
+// These tests verify that the post CRUD system works correctly
+// Tests cover: Creating, reading, updating, deleting posts,
+// liking/unliking posts, caching, and authorization
+
+// Import supertest for making HTTP requests in tests
 import request from 'supertest';
+// Import express to create a test app
 import express from 'express';
+// Import routes
 import postRoutes from '../routes/postRoutes.js';
 import authRoutes from '../routes/authRoutes.js';
+// Import models for database verification
 import { User, Post, Like } from '../models/associations.js';
+// Import database and Redis
 import sequelize from '../config/db.js';
 import redisClient from '../config/redis.js';
+// Import bcrypt for password hashing
 import bcrypt from 'bcrypt';
 
-// Create test app
+// Create test Express app
 const app = express();
 app.use(express.json());
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/posts', postRoutes);
+app.use('/api/v1/auth', authRoutes);           // Auth routes (for login)
+app.use('/api/v1/posts', postRoutes);          // Post routes (what we're testing)
 
-// Mock error handler
+// Simple error handler for test app
 app.use((err, req, res, next) => {
     res.status(err.statusCode || 500).json({
         success: false,
@@ -23,17 +36,17 @@ app.use((err, req, res, next) => {
 
 describe('Post Controller Integration Tests', () => {
 
-    let testUser;
-    let accessToken;
-    let csrfToken;
-    let refreshTokenCookie;
+    let testUser;              // User who creates/owns posts
+    let accessToken;           // JWT for authentication
+    let csrfToken;             // CSRF token for mutation requests
+    let refreshTokenCookie;    // Cookie containing refresh token
 
-    // Setup: Create tables and test user before all tests
+    // Before ALL tests: set up database and create test user
     beforeAll(async () => {
         await sequelize.sync({ force: true });
         await redisClient.connect().catch(() => { });
 
-        // Create test user
+        // Create a test user
         testUser = await User.create({
             username: 'posttest',
             email: 'posttest@example.com',
@@ -54,14 +67,14 @@ describe('Post Controller Integration Tests', () => {
         refreshTokenCookie = loginResponse.headers['set-cookie'];
     });
 
-    // Cleanup: Clear posts after each test
+    // After EACH test: clean up posts, likes, and cache
     afterEach(async () => {
         await Post.destroy({ where: {}, truncate: true, cascade: true });
         await Like.destroy({ where: {}, truncate: true });
-        await redisClient.flushAll().catch(() => { });
+        await redisClient.flushAll().catch(() => { });     // Clear Redis cache
     });
 
-    // Teardown: Close connections after all tests
+    // After ALL tests: close connections
     afterAll(async () => {
         await User.destroy({ where: {}, truncate: true });
         await sequelize.close();
@@ -73,6 +86,7 @@ describe('Post Controller Integration Tests', () => {
     =========================== */
     describe('POST /api/v1/posts', () => {
 
+        // Test: Create a new post successfully
         test('Should create a new post successfully', async () => {
             const postData = {
                 title: 'Test Post Title',
@@ -92,12 +106,13 @@ describe('Post Controller Integration Tests', () => {
             expect(response.body.data.content).toBe(postData.content);
             expect(response.body.data.userId).toBe(testUser.id);
 
-            // Verify post was created in database
+            // Verify post exists in database
             const post = await Post.findOne({ where: { title: postData.title } });
             expect(post).toBeDefined();
             expect(post.userId).toBe(testUser.id);
         });
 
+        // Test: No auth token = 401 Unauthorized
         test('Should reject post creation without authentication', async () => {
             const postData = {
                 title: 'Test Post',
@@ -112,6 +127,7 @@ describe('Post Controller Integration Tests', () => {
             expect(response.body.success).toBe(false);
         });
 
+        // Test: No CSRF token = 403 Forbidden
         test('Should reject post creation without CSRF token', async () => {
             const postData = {
                 title: 'Test Post',
@@ -128,6 +144,7 @@ describe('Post Controller Integration Tests', () => {
             expect(response.body.success).toBe(false);
         });
 
+        // Test: Missing title should fail validation
         test('Should reject post with missing title', async () => {
             const postData = {
                 content: 'This is test content'
@@ -144,6 +161,7 @@ describe('Post Controller Integration Tests', () => {
             expect(response.body.success).toBe(false);
         });
 
+        // Test: Missing content should fail validation
         test('Should reject post with missing content', async () => {
             const postData = {
                 title: 'Test Post'
@@ -160,8 +178,9 @@ describe('Post Controller Integration Tests', () => {
             expect(response.body.success).toBe(false);
         });
 
+        // Test: Creating a post should invalidate the Redis cache
         test('Should clear Redis cache after creating post', async () => {
-            // Set a cache value
+            // Manually populate cache
             await redisClient.set('posts:all', JSON.stringify([{ id: 1 }]));
 
             const postData = {
@@ -176,7 +195,7 @@ describe('Post Controller Integration Tests', () => {
                 .send(postData)
                 .expect(200);
 
-            // Verify cache was cleared
+            // Cache should now be empty (invalidated)
             const cachedPosts = await redisClient.get('posts:all');
             expect(cachedPosts).toBeNull();
         });
@@ -187,8 +206,8 @@ describe('Post Controller Integration Tests', () => {
     =========================== */
     describe('GET /api/v1/posts', () => {
 
+        // Before each test: create 3 test posts
         beforeEach(async () => {
-            // Create test posts
             await Post.bulkCreate([
                 {
                     title: 'Post 1',
@@ -208,6 +227,7 @@ describe('Post Controller Integration Tests', () => {
             ]);
         });
 
+        // Test: Get all posts
         test('Should get all posts successfully', async () => {
             const response = await request(app)
                 .get('/api/v1/posts')
@@ -220,27 +240,29 @@ describe('Post Controller Integration Tests', () => {
             expect(response.body.data[0].content).toBeDefined();
         });
 
+        // Test: Posts should be cached in Redis after first fetch
         test('Should cache posts in Redis', async () => {
-            // First request - should hit database
+            // First request - hits database
             await request(app)
                 .get('/api/v1/posts')
                 .set('Authorization', `Bearer ${accessToken}`)
                 .expect(200);
 
-            // Verify posts are cached
+            // Verify data is now in Redis cache
             const cachedPosts = await redisClient.get('posts:all');
             expect(cachedPosts).toBeDefined();
             expect(JSON.parse(cachedPosts).data).toHaveLength(3);
         });
 
+        // Test: Second request should use cached data
         test('Should return cached posts on second request', async () => {
-            // First request
+            // First request (populates cache)
             await request(app)
                 .get('/api/v1/posts')
                 .set('Authorization', `Bearer ${accessToken}`)
                 .expect(200);
 
-            // Second request - should use cache
+            // Second request (should use cache)
             const response = await request(app)
                 .get('/api/v1/posts')
                 .set('Authorization', `Bearer ${accessToken}`)
@@ -250,6 +272,7 @@ describe('Post Controller Integration Tests', () => {
             expect(response.body.data).toHaveLength(3);
         });
 
+        // Test: Posts should include user info (username, etc.)
         test('Should include user information in posts', async () => {
             const response = await request(app)
                 .get('/api/v1/posts')
@@ -268,6 +291,7 @@ describe('Post Controller Integration Tests', () => {
 
         let testPost;
 
+        // Before each test: create a single test post
         beforeEach(async () => {
             testPost = await Post.create({
                 title: 'Single Post Test',
@@ -276,6 +300,7 @@ describe('Post Controller Integration Tests', () => {
             });
         });
 
+        // Test: Get a specific post by its ID
         test('Should get single post by ID', async () => {
             const response = await request(app)
                 .get(`/api/v1/posts/${testPost.id}`)
@@ -288,6 +313,7 @@ describe('Post Controller Integration Tests', () => {
             expect(response.body.data.content).toBe(testPost.content);
         });
 
+        // Test: Non-existent post should return 404
         test('Should return 404 for non-existent post', async () => {
             const response = await request(app)
                 .get('/api/v1/posts/99999')
@@ -298,6 +324,7 @@ describe('Post Controller Integration Tests', () => {
             expect(response.body.message).toContain('Post not found');
         });
 
+        // Test: Single post should be cached
         test('Should cache single post in Redis', async () => {
             await request(app)
                 .get(`/api/v1/posts/${testPost.id}`)
@@ -326,6 +353,7 @@ describe('Post Controller Integration Tests', () => {
             });
         });
 
+        // Test: Owner can update their post
         test('Should update post successfully', async () => {
             const updateData = {
                 title: 'Updated Title',
@@ -350,6 +378,7 @@ describe('Post Controller Integration Tests', () => {
             expect(updatedPost.content).toBe(updateData.content);
         });
 
+        // Test: Can't update a post that doesn't exist
         test('Should reject update of non-existent post', async () => {
             const response = await request(app)
                 .put('/api/v1/posts/99999')
@@ -362,6 +391,7 @@ describe('Post Controller Integration Tests', () => {
             expect(response.body.message).toContain('Post not found');
         });
 
+        // Test: Only the post owner can update it
         test('Should reject update by non-owner', async () => {
             // Create another user
             const otherUser = await User.create({
@@ -371,7 +401,7 @@ describe('Post Controller Integration Tests', () => {
                 role: 'user'
             });
 
-            // Login as other user
+            // Login as the other user
             const otherLoginResponse = await request(app)
                 .post('/api/v1/auth/login')
                 .send({
@@ -382,23 +412,23 @@ describe('Post Controller Integration Tests', () => {
             const otherAccessToken = otherLoginResponse.body.data.accessToken;
             const otherCsrfToken = otherLoginResponse.headers['x-csrf-token'];
 
-            // Try to update testUser's post
+            // Try to update someone else's post
             const response = await request(app)
                 .put(`/api/v1/posts/${testPost.id}`)
                 .set('Authorization', `Bearer ${otherAccessToken}`)
                 .set('X-CSRF-Token', otherCsrfToken)
                 .send({ title: 'Hacked Title', content: 'Hacked content' })
-                .expect(403);
+                .expect(403);                          // 403 Forbidden
 
             expect(response.body.success).toBe(false);
             expect(response.body.message).toContain('not authorized');
 
-            // Cleanup
             await otherUser.destroy();
         });
 
+        // Test: Updating a post should clear the cache
         test('Should clear Redis cache after update', async () => {
-            // Set cache
+            // Set up cache entries
             await redisClient.set('posts:all', JSON.stringify([{ id: 1 }]));
             await redisClient.set(`posts:id:${testPost.id}`, JSON.stringify({ id: testPost.id }));
 
@@ -409,7 +439,7 @@ describe('Post Controller Integration Tests', () => {
                 .send({ title: 'Updated', content: 'Updated content' })
                 .expect(200);
 
-            // Verify cache was cleared
+            // Both cache entries should be cleared
             const cachedPosts = await redisClient.get('posts:all');
             const cachedPost = await redisClient.get(`posts:id:${testPost.id}`);
             expect(cachedPosts).toBeNull();
@@ -432,6 +462,7 @@ describe('Post Controller Integration Tests', () => {
             });
         });
 
+        // Test: Owner can delete their post
         test('Should delete post successfully', async () => {
             const response = await request(app)
                 .delete(`/api/v1/posts/${testPost.id}`)
@@ -442,11 +473,12 @@ describe('Post Controller Integration Tests', () => {
             expect(response.body.success).toBe(true);
             expect(response.body.message).toContain('Post deleted successfully');
 
-            // Verify post was deleted from database
+            // Verify post no longer exists
             const deletedPost = await Post.findByPk(testPost.id);
             expect(deletedPost).toBeNull();
         });
 
+        // Test: Can't delete a post that doesn't exist
         test('Should reject delete of non-existent post', async () => {
             const response = await request(app)
                 .delete('/api/v1/posts/99999')
@@ -458,6 +490,7 @@ describe('Post Controller Integration Tests', () => {
             expect(response.body.message).toContain('Post not found');
         });
 
+        // Test: Non-owner can't delete someone else's post
         test('Should reject delete by non-owner', async () => {
             // Create another user
             const otherUser = await User.create({
@@ -467,7 +500,7 @@ describe('Post Controller Integration Tests', () => {
                 role: 'user'
             });
 
-            // Login as other user
+            // Login as the other user
             const otherLoginResponse = await request(app)
                 .post('/api/v1/auth/login')
                 .send({
@@ -487,11 +520,10 @@ describe('Post Controller Integration Tests', () => {
 
             expect(response.body.success).toBe(false);
 
-            // Verify post still exists
+            // Post should still exist
             const post = await Post.findByPk(testPost.id);
             expect(post).toBeDefined();
 
-            // Cleanup
             await otherUser.destroy();
         });
     });
@@ -511,6 +543,7 @@ describe('Post Controller Integration Tests', () => {
             });
         });
 
+        // Test: User can like a post
         test('Should like post successfully', async () => {
             const response = await request(app)
                 .post(`/api/v1/posts/${testPost.id}/like`)
@@ -531,6 +564,7 @@ describe('Post Controller Integration Tests', () => {
             expect(like).toBeDefined();
         });
 
+        // Test: Can't like the same post twice
         test('Should reject duplicate like', async () => {
             // Like once
             await Like.create({
@@ -549,6 +583,7 @@ describe('Post Controller Integration Tests', () => {
             expect(response.body.message).toContain('already liked');
         });
 
+        // Test: Can't like a post that doesn't exist
         test('Should reject like on non-existent post', async () => {
             const response = await request(app)
                 .post('/api/v1/posts/99999/like')
@@ -575,13 +610,14 @@ describe('Post Controller Integration Tests', () => {
                 userId: testUser.id
             });
 
-            // Create a like
+            // Create a like that we'll remove
             await Like.create({
                 userId: testUser.id,
                 postId: testPost.id
             });
         });
 
+        // Test: User can unlike a previously liked post
         test('Should unlike post successfully', async () => {
             const response = await request(app)
                 .delete(`/api/v1/posts/${testPost.id}/like`)
@@ -602,6 +638,7 @@ describe('Post Controller Integration Tests', () => {
             expect(like).toBeNull();
         });
 
+        // Test: Can't unlike a post you haven't liked
         test('Should reject unlike when not liked', async () => {
             // Remove the like first
             await Like.destroy({
@@ -611,7 +648,7 @@ describe('Post Controller Integration Tests', () => {
                 }
             });
 
-            // Try to unlike
+            // Try to unlike (there's no like to remove)
             const response = await request(app)
                 .delete(`/api/v1/posts/${testPost.id}/like`)
                 .set('Authorization', `Bearer ${accessToken}`)
@@ -628,8 +665,8 @@ describe('Post Controller Integration Tests', () => {
     =========================== */
     describe('GET /api/v1/posts/user/:userId', () => {
 
+        // Before each test: create posts for the test user
         beforeEach(async () => {
-            // Create posts for test user
             await Post.bulkCreate([
                 {
                     title: 'User Post 1',
@@ -644,6 +681,7 @@ describe('Post Controller Integration Tests', () => {
             ]);
         });
 
+        // Test: Get all posts by a specific user
         test('Should get all posts by specific user', async () => {
             const response = await request(app)
                 .get(`/api/v1/posts/user/${testUser.id}`)
@@ -656,8 +694,9 @@ describe('Post Controller Integration Tests', () => {
             expect(response.body.data[1].userId).toBe(testUser.id);
         });
 
+        // Test: User with no posts should return empty array
         test('Should return empty array for user with no posts', async () => {
-            // Create user with no posts
+            // Create a user who has no posts
             const newUser = await User.create({
                 username: 'nopostuser',
                 email: 'nopost@example.com',
@@ -673,7 +712,6 @@ describe('Post Controller Integration Tests', () => {
             expect(response.body.success).toBe(true);
             expect(response.body.data).toHaveLength(0);
 
-            // Cleanup
             await newUser.destroy();
         });
     });

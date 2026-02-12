@@ -1,20 +1,21 @@
-'use strict';
+// ---------------------------------------------------------
+// MIGRATION: Add Performance Indexes
+// ---------------------------------------------------------
+// Indexes make database queries MUCH faster (10-100x improvement)
+// Think of an index like a book's table of contents - instead of
+// reading every page to find something, you jump straight to it
+//
+// This migration adds indexes to frequently queried columns:
+// - Users: email (for login lookups)
+// - Posts: userId, createdAt (for fetching and sorting posts)
+// - Comments: postId, userId (for loading comments)
+// - Likes: postId, userId (for checking if user liked a post)
 
-/**
- * Migration: Add Performance Indexes
- * 
- * This migration adds indexes to frequently queried columns to dramatically
- * improve query performance (10-100x faster queries).
- * 
- * Indexes added:
- * - Users: email (unique index for fast login)
- * - Posts: userId, createdAt, composite (userId + createdAt)
- * - Comments: postId, userId
- * - Likes: postId, userId, composite unique (userId + postId)
- */
+'use strict';
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
+  // "up" creates all the indexes
   async up(queryInterface, Sequelize) {
     console.log('Creating performance indexes...');
 
@@ -22,11 +23,10 @@ module.exports = {
     // USERS TABLE INDEXES
     // =========================================================================
 
-    // Index on email (for login queries)
-    // This makes login 100x faster when you have many users
+    // Index on email - makes login queries instant even with millions of users
     await queryInterface.addIndex('Users', ['email'], {
       name: 'idx_users_email',
-      unique: true  // Email must be unique
+      unique: true                    // Also enforces email uniqueness at the database level
     });
     console.log('✅ Created index: Users.email');
 
@@ -34,23 +34,20 @@ module.exports = {
     // POSTS TABLE INDEXES
     // =========================================================================
 
-    // Index on userId (for getting user's posts)
-    // Query: SELECT * FROM Posts WHERE userId = 1
+    // Index on userId - fast lookup of all posts by a specific user
     await queryInterface.addIndex('Posts', ['userId'], {
       name: 'idx_posts_user_id'
     });
     console.log('✅ Created index: Posts.userId');
 
-    // Index on createdAt (for sorting posts by date)
-    // Query: SELECT * FROM Posts ORDER BY createdAt DESC
+    // Index on createdAt - fast sorting of posts by date (newest first)
     await queryInterface.addIndex('Posts', ['createdAt'], {
       name: 'idx_posts_created_at'
     });
     console.log('✅ Created index: Posts.createdAt');
 
     // Composite index on userId + createdAt
-    // For queries that filter by user AND sort by date
-    // Query: SELECT * FROM Posts WHERE userId = 1 ORDER BY createdAt DESC
+    // Optimizes: "Get all posts by user X, sorted by newest first"
     await queryInterface.addIndex('Posts', ['userId', 'createdAt'], {
       name: 'idx_posts_user_created'
     });
@@ -60,15 +57,13 @@ module.exports = {
     // COMMENTS TABLE INDEXES
     // =========================================================================
 
-    // Index on postId (for getting post's comments)
-    // Query: SELECT * FROM Comments WHERE postId = 1
+    // Index on postId - fast lookup of all comments on a specific post
     await queryInterface.addIndex('Comments', ['postId'], {
       name: 'idx_comments_post_id'
     });
     console.log('✅ Created index: Comments.postId');
 
-    // Index on userId (for getting user's comments)
-    // Query: SELECT * FROM Comments WHERE userId = 1
+    // Index on userId - fast lookup of all comments by a specific user
     await queryInterface.addIndex('Comments', ['userId'], {
       name: 'idx_comments_user_id'
     });
@@ -78,26 +73,23 @@ module.exports = {
     // LIKES TABLE INDEXES
     // =========================================================================
 
-    // Index on postId (for getting post's likes)
-    // Query: SELECT * FROM Likes WHERE postId = 1
+    // Index on postId - fast count of likes on a post
     await queryInterface.addIndex('Likes', ['postId'], {
       name: 'idx_likes_post_id'
     });
     console.log('✅ Created index: Likes.postId');
 
-    // Index on userId (for getting user's likes)
-    // Query: SELECT * FROM Likes WHERE userId = 1
+    // Index on userId - fast lookup of all posts user has liked
     await queryInterface.addIndex('Likes', ['userId'], {
       name: 'idx_likes_user_id'
     });
     console.log('✅ Created index: Likes.userId');
 
-    // Composite UNIQUE index on userId + postId
-    // Prevents duplicate likes (user can't like same post twice)
-    // Also speeds up queries like: SELECT * FROM Likes WHERE userId = 1 AND postId = 1
+    // Composite UNIQUE index - prevents duplicate likes AND speeds up lookups
+    // "Has user X liked post Y?" is now instant
     await queryInterface.addIndex('Likes', ['userId', 'postId'], {
       name: 'idx_likes_user_post',
-      unique: true  // Ensures no duplicate likes
+      unique: true                    // Same user can't like the same post twice
     });
     console.log('✅ Created unique composite index: Likes(userId, postId)');
 
@@ -105,6 +97,7 @@ module.exports = {
     console.log('📈 Your queries should now be 10-100x faster!');
   },
 
+  // "down" removes all the indexes (reverses the migration)
   async down(queryInterface, Sequelize) {
     console.log('Removing performance indexes...');
 

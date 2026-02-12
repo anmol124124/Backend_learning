@@ -1,30 +1,44 @@
+// ---------------------------------------------------------
+// AUTHENTICATION ROUTES
+// ---------------------------------------------------------
+// This file defines all URL paths for login, registration, OAuth, and password reset
+
+// Import Express framework for creating routes
 import express from "express";
+// Import auth middleware to protect routes that need login
 import authMiddleware from "../middleware/authMiddleware.js";
+// Import Passport.js for OAuth authentication (Google, GitHub)
 import passport from "passport";
+// Import CSRF protection middleware
 import csrfProtection from "../middleware/csrfMiddleware.js";
+// Import validation schemas to check if request data is properly formatted
 import {
-  validate,
-  registerSchema,
-  loginSchema,
-  refreshTokenSchema,
-  forgotPasswordSchema,      // New: validation for forgot password
-  resetPasswordSchema        // New: validation for reset password
+  validate,                   // Validation middleware wrapper
+  registerSchema,             // Rules for registration (username, email, password)
+  loginSchema,                // Rules for login (email, password)
+  refreshTokenSchema,         // Rules for token refresh
+  forgotPasswordSchema,       // Rules for forgot password (email)
+  resetPasswordSchema         // Rules for reset password (token, new password)
 } from "../validators/authValidator.js";
+// Import controller functions that handle each auth action
 import {
-  register,
-  login,
-  refreshToken,
-  logout,
-  oauthSuccess,
-  getProfile,
-  googleOAuthCallback,
-  githubOAuthCallback,
-  forgotPassword,            // New: forgot password controller
-  resetPassword              // New: reset password controller
+  register,                   // Handle new user registration
+  login,                      // Handle user login
+  refreshToken,               // Handle JWT token refresh
+  logout,                     // Handle user logout
+  oauthSuccess,               // Handle successful OAuth login
+  getProfile,                 // Get logged-in user's profile
+  googleOAuthCallback,        // Handle Google OAuth callback
+  githubOAuthCallback,        // Handle GitHub OAuth callback
+  forgotPassword,             // Send password reset email
+  resetPassword               // Reset password with token
 } from "../controllers/authController.js";
+// Import CSRF verification middleware
 import verifyCsrf from "../middleware/verifyCsrf.js";
+// Import rate limiter to prevent brute-force attacks on login/register
 import { authLimiter } from "../middleware/rateLimiter.js";
 
+// Create a new Express router
 const router = express.Router();
 
 /**
@@ -66,6 +80,8 @@ const router = express.Router();
  *       400:
  *         description: Validation error
  */
+// POST /api/v1/auth/register → Create a new user account
+// Pipeline: rate limit → validate input → register controller
 router.post("/register", authLimiter, validate(registerSchema), register);
 
 
@@ -97,6 +113,8 @@ router.post("/register", authLimiter, validate(registerSchema), register);
  *       401:
  *         description: Invalid credentials
  */
+// POST /api/v1/auth/login → Log in with email and password
+// Pipeline: rate limit → validate input → login controller
 router.post("/login", authLimiter, validate(loginSchema), login);
 
 /**
@@ -123,6 +141,7 @@ router.post("/login", authLimiter, validate(loginSchema), login);
  *       401:
  *         description: Invalid refresh token
  */
+// POST /api/v1/auth/refresh-token → Get a new access token using your refresh token
 router.post("/refresh-token", validate(refreshTokenSchema), refreshToken);
 
 /**
@@ -135,6 +154,7 @@ router.post("/refresh-token", validate(refreshTokenSchema), refreshToken);
  *       200:
  *         description: Logout successful
  */
+// POST /api/v1/auth/logout → Log out (clears cookies and refresh token)
 router.post("/logout", logout);
 
 /**
@@ -151,10 +171,14 @@ router.post("/logout", logout);
  *       401:
  *         description: Unauthorized
  */
+// GET /api/v1/auth/profile → Get the current user's profile
+// Pipeline: auth check → CSRF check → get profile controller
 router.get("/profile", authMiddleware, verifyCsrf, getProfile);
 
 
-/* ---------------- OAUTH ROUTES (NEW) ---------------- */
+/* ===========================
+   OAUTH ROUTES (Social Login)
+=========================== */
 
 /**
  * @swagger
@@ -163,6 +187,8 @@ router.get("/profile", authMiddleware, verifyCsrf, getProfile);
  *     summary: Login with Google
  *     tags: [Auth]
  */
+// GET /api/v1/auth/google → Redirect user to Google's login page
+// Passport handles the OAuth flow - asks for user's profile and email
 router.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
@@ -175,13 +201,15 @@ router.get(
  *     summary: Google OAuth callback
  *     tags: [Auth]
  */
+// GET /api/v1/auth/google/callback → Google redirects back here after user logs in
+// Passport verifies the response, then our callback controller handles token creation
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    session: false,
-    failureRedirect: "/login-failed",
+    session: false,                        // Don't create a session (we use JWT tokens instead)
+    failureRedirect: "/login-failed",      // Where to go if authentication fails
   }),
-  googleOAuthCallback
+  googleOAuthCallback                      // Handle successful Google login
 );
 
 /**
@@ -191,9 +219,10 @@ router.get(
  *     summary: Login with GitHub
  *     tags: [Auth]
  */
+// GET /api/v1/auth/github → Redirect user to GitHub's login page
 router.get(
   "/github",
-  passport.authenticate("github", { scope: ["user:email"] })
+  passport.authenticate("github", { scope: ["user:email"] })  // Request access to user's email
 );
 
 /**
@@ -203,24 +232,22 @@ router.get(
  *     summary: GitHub OAuth callback
  *     tags: [Auth]
  */
+// GET /api/v1/auth/github/callback → GitHub redirects back here after user logs in
 router.get(
   "/github/callback",
   passport.authenticate("github", {
-    session: false,
-    failureRedirect: "/login-failed",
+    session: false,                        // We use JWT, not sessions
+    failureRedirect: "/login-failed",      // Where to go if auth fails
   }),
-  githubOAuthCallback
+  githubOAuthCallback                      // Handle successful GitHub login
 );
 
-/* ===================================================================
+/* ===========================
    PASSWORD RESET ROUTES
-   ===================================================================
-   
-   Two endpoints for password reset feature:
-   1. /forgot-password - User requests reset link via email
-   2. /reset-password  - User sets new password using token from email
-   
-=================================================================== */
+=========================== */
+// Two-step process:
+// 1. User requests a reset link via email (forgot-password)
+// 2. User clicks the link and sets a new password (reset-password)
 
 /**
  * @swagger
@@ -262,11 +289,13 @@ router.get(
  *       400:
  *         description: Validation error (invalid email format)
  */
+// POST /api/v1/auth/forgot-password → Send reset link to user's email
+// Pipeline: rate limit (prevent abuse) → validate email → send reset email
 router.post(
   "/forgot-password",
-  authLimiter,                              // Rate limit to prevent abuse
-  validate(forgotPasswordSchema),           // Validate email format
-  forgotPassword                            // Controller function
+  authLimiter,                              // Rate limit to prevent spam/abuse
+  validate(forgotPasswordSchema),           // Validate that email format is correct
+  forgotPassword                            // Controller: generates token and sends email
 );
 
 /**
@@ -325,11 +354,14 @@ router.post(
  *                   type: string
  *                   example: Invalid or expired reset token
  */
+// POST /api/v1/auth/reset-password → Set new password using token from email
+// Pipeline: rate limit (prevent brute force) → validate token + password → reset password
 router.post(
   "/reset-password",
-  authLimiter,                              // Rate limit to prevent brute force
-  validate(resetPasswordSchema),            // Validate token and password
-  resetPassword                             // Controller function
+  authLimiter,                              // Rate limit to prevent brute force attacks
+  validate(resetPasswordSchema),            // Validate token format and password strength
+  resetPassword                             // Controller: verifies token and updates password
 );
 
-export default router; 
+// Export this router so it can be mounted in the main app.js file
+export default router;

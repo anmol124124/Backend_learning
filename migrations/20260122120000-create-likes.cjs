@@ -1,77 +1,76 @@
+// ---------------------------------------------------------
+// MIGRATION: Create Likes Table
+// ---------------------------------------------------------
+// This migration creates the "Likes" table in the database
+// Each like connects a User to a Post they liked
+// A user can only like each post once (unique constraint)
+
 "use strict";
 
-// This file is a Sequelize migration
-// Migration ka matlab: database ke structure ko banana / change karna
 module.exports = {
-    
-    // "up" function tab chalta hai jab hum migration run karte hain
-    // command: npx sequelize-cli db:migrate
+    // "up" runs when you apply the migration (npx sequelize-cli db:migrate)
     async up(queryInterface, Sequelize) {
 
-        // Database me "Likes" naam ki table create ho rahi hai
+        // Create the "Likes" table
         await queryInterface.createTable("Likes", {
 
-            // Unique ID for each like
+            // Primary key - unique ID for each like
             id: {
-                type: Sequelize.INTEGER,      // Number type column
-                autoIncrement: true,          // Automatically increases (1,2,3...)
-                primaryKey: true,             // Primary key (unique identifier)
-                allowNull: false,             // Value required
+                type: Sequelize.INTEGER,      // Number type
+                autoIncrement: true,          // Automatically increases (1, 2, 3, ...)
+                primaryKey: true,             // Unique identifier
+                allowNull: false,             // Cannot be empty
             },
 
-            // ID of the user who liked the post
+            // User ID - which user liked the post (foreign key → Users table)
             userId: {
-                type: Sequelize.INTEGER,      // User ID will be a number
-                allowNull: false,             // User ID is mandatory
+                type: Sequelize.INTEGER,
+                allowNull: false,             // Must know who liked it
 
-                // Foreign key: linked with Users table
+                // Links to the Users table's "id" column
                 references: { model: "Users", key: "id" },
 
-                // Agar user delete ho jaye
-                // toh uske likes bhi automatically delete ho jayenge
+                // If the user is deleted, remove their likes too
                 onDelete: "CASCADE",
             },
 
-            // ID of the post which is liked
+            // Post ID - which post was liked (foreign key → Posts table)
             postId: {
-                type: Sequelize.INTEGER,      // Post ID will be a number
-                allowNull: false,             // Post ID is mandatory
+                type: Sequelize.INTEGER,
+                allowNull: false,             // Must know which post was liked
 
-                // Foreign key: linked with Posts table
+                // Links to the Posts table's "id" column
                 references: { model: "Posts", key: "id" },
 
-                // Agar post delete ho jaye
-                // toh uske likes bhi automatically delete ho jayenge
+                // If the post is deleted, remove its likes too
                 onDelete: "CASCADE",
             },
 
-            // Automatically stores when the like was created
+            // When the like was created
             createdAt: {
-                type: Sequelize.DATE,         // Date & time
+                type: Sequelize.DATE,
                 allowNull: false,
             },
 
-            // Automatically stores when the like was last updated
+            // When the like was last updated
             updatedAt: {
-                type: Sequelize.DATE,         // Date & time
+                type: Sequelize.DATE,
                 allowNull: false,
             },
         });
 
-        // Unique constraint add kar rahe hain
-        // Matlab: same user same post ko dobara like nahi kar sakta
+        // Add a UNIQUE constraint on (userId, postId) combination
+        // This prevents the same user from liking the same post twice
         await queryInterface.addConstraint("Likes", {
-            fields: ["userId", "postId"],     // Combination of these two fields
-            type: "unique",                   // Must be unique
-            name: "unique_user_post_like",    // Constraint ka naam
+            fields: ["userId", "postId"],     // These two fields combined must be unique
+            type: "unique",                   // Constraint type
+            name: "unique_user_post_like",    // Name for this constraint
         });
     },
 
-    // "down" function tab chalta hai jab migration rollback karte hain
-    // command: npx sequelize-cli db:migrate:undo
+    // "down" runs when you undo the migration (npx sequelize-cli db:migrate:undo)
     async down(queryInterface, Sequelize) {
-
-        // "Likes" table ko database se completely delete kar deta hai
+        // Drop the entire Likes table (removes table and all its data)
         await queryInterface.dropTable("Likes");
     },
 };

@@ -1,28 +1,28 @@
-// queues/emailQueue.js
+// ---------------------------------------------------------
+// EMAIL QUEUE (Bull Queue)
+// ---------------------------------------------------------
+// This file creates a job queue for sending emails in the background
+// Instead of sending emails directly (which is slow), we add them to a queue
+// The emailWorker picks up jobs from this queue and processes them
 
-// 👉 Bull library import kar rahe hain
-// Bull ka use background jobs / queue banane ke liye hota hai (jaise email bhejna)
+// Import Bull - a library for creating job queues backed by Redis
 import Queue from "bull";
 
-// 👉 Redis client import (Redis ek memory-based system hota hai jo queue ka data store karta hai)
+// Import Redis client (not directly used here, but queues depend on Redis)
 import redisClient from "../config/redis.js";
 
-// --------------------------------------------------
-// 👉 EMAIL QUEUE CREATE KAR RAHE HAIN
-// --------------------------------------------------
-
-// Yahan "emailQueue" naam ki ek queue ban rahi hai
-// Is queue me email bhejne wale kaam (jobs) add honge
+// Create a new queue named "email-queue"
+// This queue stores email-sending jobs until a worker processes them
 const emailQueue = new Queue("email-queue", {
 
-  // 👉 Redis ki details de rahe hain
-  // Bull ko pata hona chahiye ki Redis kahan chal raha hai
+  // Redis connection details
+  // Bull uses Redis to store queue data (jobs, state, etc.)
   redis: {
-    host: "127.0.0.1",   // Matlab Redis isi machine (localhost) par chal raha hai
-    port: 6379,          // Redis ka default port number
+    host: "127.0.0.1",          // Redis is running on this machine (localhost)
+    port: 6379,                  // Redis default port
   },
 });
 
-// 👉 Is queue ko export kar rahe hain
-// Taaki hum ise kahin aur use kar saken (job add karne ke liye)
+// Export the queue so other files can add jobs to it
+// Usage: emailQueue.add({ to: "user@email.com", subject: "...", message: "..." })
 export default emailQueue;

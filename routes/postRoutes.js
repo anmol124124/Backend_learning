@@ -1,33 +1,45 @@
-import express from "express";
-import authMiddleware from "../middleware/authMiddleware.js";
-import optionalAuth from "../middleware/optionalAuth.js";
-import { allowRoles } from "../middleware/roleMiddleware.js";
+// ---------------------------------------------------------
+// POST ROUTES
+// ---------------------------------------------------------
+// This file defines all URL paths for post operations (CRUD, likes, stats)
 
+// Import Express framework
+import express from "express";
+// Import auth middleware (some routes need login)
+import authMiddleware from "../middleware/authMiddleware.js";
+// Import optional auth (user may or may not be logged in)
+import optionalAuth from "../middleware/optionalAuth.js";
+// Import role-checking middleware (for admin-only routes)
+import { allowRoles } from "../middleware/roleMiddleware.js";
+// Import all post controller functions
 import {
-  createPost,
-  paginatePosts,
-  getAllPosts,
-  getPostById,
-  getUserPosts,
-  updatePost,
-  deletePost,
-  adminDeletePost,
-  toggleLike,          // New: Toggle like/unlike
-  likePost,
-  unlikePost,
-  getPostsWithStats,    // New: Advanced query
-  getUserStats,         // New: Advanced query
-  getTopPosts          // New: Advanced query
+  createPost,            // Create a new post
+  paginatePosts,         // Get posts with pagination and search
+  getAllPosts,            // Get all posts (cached with Redis)
+  getPostById,           // Get a single post by ID
+  getUserPosts,          // Get all posts by a specific user
+  updatePost,            // Update a post (owner only)
+  deletePost,            // Delete a post (owner only)
+  adminDeletePost,       // Delete any post (admin only)
+  toggleLike,            // Like or unlike a post (toggle)
+  likePost,              // Legacy: like a post
+  unlikePost,            // Legacy: unlike a post
+  getPostsWithStats,     // Get posts with like/comment counts
+  getUserStats,          // Get user statistics
+  getTopPosts            // Get most-liked posts
 } from "../controllers/postController.js";
+// Import validation schemas for post data
 import {
-  validate,
-  validateQuery,
-  createPostSchema,
-  updatePostSchema,
-  paginationSchema
+  validate,              // Validation middleware wrapper
+  validateQuery,         // Query parameter validation wrapper
+  createPostSchema,      // Rules for creating a post
+  updatePostSchema,      // Rules for updating a post
+  paginationSchema       // Rules for pagination parameters
 } from "../validators/postValidator.js";
+// Import rate limiter to prevent spam
 import { createLimiter } from "../middleware/rateLimiter.js";
 
+// Create a new Express router
 const router = express.Router();
 
 /**
@@ -67,6 +79,8 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
+// POST /api/v1/posts → Create a new blog post
+// Pipeline: auth check → rate limit → validate input → create post
 router.post("/", authMiddleware, createLimiter, validate(createPostSchema), createPost);
 
 /**
@@ -79,6 +93,8 @@ router.post("/", authMiddleware, createLimiter, validate(createPostSchema), crea
  *       200:
  *         description: List of all posts
  */
+// GET /api/v1/posts → Get all posts (uses Redis cache for speed)
+// Optional auth: works for logged-in and anonymous users
 router.get("/", optionalAuth, getAllPosts);
 
 /**
@@ -102,6 +118,8 @@ router.get("/", optionalAuth, getAllPosts);
  *       200:
  *         description: Paginated posts list
  */
+// GET /api/v1/posts/paginate → Get posts page by page with optional search
+// Pipeline: optional auth → validate query params → paginate controller
 router.get("/paginate", optionalAuth, validateQuery(paginationSchema), paginatePosts);
 
 
@@ -122,6 +140,7 @@ router.get("/paginate", optionalAuth, validateQuery(paginationSchema), paginateP
  *       200:
  *         description: User posts fetched successfully
  */
+// GET /api/v1/posts/users/:id/posts → Get all posts by a specific user
 router.get("/users/:id/posts", getUserPosts);
 
 /**
@@ -143,6 +162,7 @@ router.get("/users/:id/posts", getUserPosts);
  *       404:
  *         description: Post not found
  */
+// GET /api/v1/posts/:id → Get a single post with full details
 router.get("/:id", optionalAuth, getPostById);
 
 /**
@@ -177,6 +197,7 @@ router.get("/:id", optionalAuth, getPostById);
  *       401:
  *         description: Unauthorized
  */
+// PUT /api/v1/posts/:id → Update an existing post (only the author can update)
 router.put("/:id", authMiddleware, validate(updatePostSchema), updatePost);
 
 /**
@@ -200,9 +221,14 @@ router.put("/:id", authMiddleware, validate(updatePostSchema), updatePost);
  *       401:
  *         description: Unauthorized
  */
+// DELETE /api/v1/posts/:id → Delete a post (only the author can delete)
 router.delete("/:id", authMiddleware, deletePost);
-router.post("/:id/toggle-like", authMiddleware, toggleLike);  // Toggle like/unlike
+
+// POST /api/v1/posts/:id/toggle-like → Like or unlike a post (toggle switch behavior)
+router.post("/:id/toggle-like", authMiddleware, toggleLike);
+// POST /api/v1/posts/:id/toggle-unlike → Legacy unlike endpoint
 router.post("/:id/toggle-unlike", authMiddleware, unlikePost);
+
 /**
  * @swagger
  * /api/v1/posts/admin/delete/{id}:
@@ -224,10 +250,12 @@ router.post("/:id/toggle-unlike", authMiddleware, unlikePost);
  *       403:
  *         description: Forbidden
  */
+// DELETE /api/v1/posts/admin/delete/:id → Admin can delete ANY post
+// Pipeline: auth check → role check (admin/superadmin only) → delete post
 router.delete(
   "/admin/delete/:id",
   authMiddleware,
-  allowRoles("admin", "superadmin"),
+  allowRoles("admin", "superadmin"),  // Only admins and superadmins can use this
   adminDeletePost
 );
 
@@ -241,6 +269,7 @@ router.delete(
  *       200:
  *         description: Posts with stats fetched successfully
  */
+// GET /api/v1/posts/stats/all → Get all posts with aggregated statistics
 router.get("/stats/all", getPostsWithStats);
 
 /**
@@ -261,6 +290,7 @@ router.get("/stats/all", getPostsWithStats);
  *       404:
  *         description: User not found
  */
+// GET /api/v1/posts/stats/user/:userId → Get statistics for a specific user
 router.get("/stats/user/:userId", getUserStats);
 
 /**
@@ -280,6 +310,8 @@ router.get("/stats/user/:userId", getUserStats);
  *       200:
  *         description: Top posts fetched successfully
  */
+// GET /api/v1/posts/stats/top → Get the most-liked posts (leaderboard)
 router.get("/stats/top", getTopPosts);
 
+// Export this router
 export default router;

@@ -1,35 +1,30 @@
 // ---------------------------------------------------------
-// roleMiddleware.js
+// ROLE MIDDLEWARE
 // ---------------------------------------------------------
-// Ye middleware check karta hai ki user ka role (token me jo mila)
-// kya allowed roles ki list me present hai ya nahi.
-// Agar present nahi → access deny kar deta hai.
-// ---------------------------------------------------------
+// This middleware checks if a logged-in user has the right role
+// to access a specific route (e.g., only admins can access admin routes)
+// It runs AFTER authMiddleware (which sets req.user)
 
-// allowedRoles = ["admin", "superadmin"] etc.
+// Create a middleware factory that accepts a list of allowed roles
+// Example usage: allowRoles("admin", "superadmin")
 export const allowRoles = (...allowedRoles) => {
 
-  // Ye actual middleware function return karta hai
+  // Return the actual middleware function
   return (req, res, next) => {
 
-    // Token decode hone ke baad authMiddleware ne req.user.role set kiya tha
-    const userRole = req.user.role;   // Example → "admin", "user", "superadmin"
+    // Get the user's role from the decoded JWT token (set by authMiddleware)
+    const userRole = req.user.role;   // e.g., "admin", "user", "superadmin"
 
-    // -----------------------------------------------------
-    // CHECK:
-    // Kya allowedRoles ke array me userRole present hai?
-    // Example:
-    // allowedRoles = ["admin", "superadmin"]
-    // userRole = "user"
-    // → "user" is NOT included → access denied
-    // -----------------------------------------------------
+    // Check if the user's role is in the list of allowed roles
+    // Example: allowedRoles = ["admin", "superadmin"], userRole = "user"
+    // → "user" is NOT in ["admin", "superadmin"] → access denied
     if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({
-        message: "You do not have permission to access this"
+        message: "You do not have permission to access this"   // 403 = Forbidden
       });
     }
 
-    // ✔ Agar role match ho gaya → next handler ko call karein
+    // If the user's role IS in the allowed list → let them through
     next();
   };
 };

@@ -1,11 +1,20 @@
+// ---------------------------------------------------------
+// TAG ROUTES
+// ---------------------------------------------------------
+// This file defines URL paths for tag operations
+
+// Import Express framework
 import express from "express";
+// Import optional auth (tags are public, but auth adds like status to posts)
 import optionalAuth from "../middleware/optionalAuth.js";
+// Import tag controller functions
 import {
-    getAllTags,
-    getTrendingTags,
-    getPostsByTag
+    getAllTags,           // Get list of all tags
+    getTrendingTags,     // Get most popular tags from last 30 days
+    getPostsByTag        // Get all posts with a specific tag
 } from "../controllers/tagController.js";
 
+// Create a new Express router
 const router = express.Router();
 
 /**
@@ -25,6 +34,7 @@ const router = express.Router();
  *       200:
  *         description: Tags fetched successfully
  */
+// GET /api/v1/tags → Returns list of all tags sorted by usage
 router.get("/", getAllTags);
 
 /**
@@ -43,6 +53,7 @@ router.get("/", getAllTags);
  *       200:
  *         description: Trending tags fetched successfully
  */
+// GET /api/v1/tags/trending → Returns most popular tags from the last 30 days
 router.get("/trending", getTrendingTags);
 
 /**
@@ -71,6 +82,9 @@ router.get("/trending", getTrendingTags);
  *       404:
  *         description: Tag not found
  */
+// GET /api/v1/tags/:slug/posts → Get all posts that have a specific tag
+// Uses optionalAuth: if logged in, shows like status on posts
 router.get("/:slug/posts", optionalAuth, getPostsByTag);
 
+// Export this router
 export default router;

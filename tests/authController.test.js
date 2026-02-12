@@ -1,17 +1,31 @@
+// ---------------------------------------------------------
+// AUTH CONTROLLER INTEGRATION TESTS
+// ---------------------------------------------------------
+// These tests verify that the authentication system works correctly
+// Tests cover: Registration, Login, Logout, Token Refresh, 
+// Forgot Password, Reset Password, and Profile Access
+
+// Import supertest - allows us to make HTTP requests to express apps in tests
 import request from 'supertest';
+// Import express to create a test-only app
 import express from 'express';
+// Import the auth routes we want to test
 import authRoutes from '../routes/authRoutes.js';
+// Import the User model to check database state
 import { User } from '../models/associations.js';
+// Import database connection (Sequelize)
 import sequelize from '../config/db.js';
+// Import Redis client for CSRF token checks
 import redisClient from '../config/redis.js';
+// Import bcrypt for password hashing verification
 import bcrypt from 'bcrypt';
 
-// Create test app
+// Create a mini Express app just for testing (not the real app)
 const app = express();
-app.use(express.json());
-app.use('/api/v1/auth', authRoutes);
+app.use(express.json());                          // Parse JSON request bodies
+app.use('/api/v1/auth', authRoutes);              // Mount auth routes
 
-// Mock error handler
+// Simple error handler for test app
 app.use((err, req, res, next) => {
     res.status(err.statusCode || 500).json({
         success: false,
@@ -19,24 +33,25 @@ app.use((err, req, res, next) => {
     });
 });
 
+// Main test suite for Auth Controller
 describe('Auth Controller Integration Tests', () => {
 
-    // Setup: Create tables before all tests
+    // Before ALL tests: set up database and Redis
     beforeAll(async () => {
-        await sequelize.sync({ force: true }); // Recreate tables
-        await redisClient.connect().catch(() => { }); // Connect to Redis
+        await sequelize.sync({ force: true });         // Drop and recreate all tables
+        await redisClient.connect().catch(() => { });   // Connect to Redis (ignore if fails)
     });
 
-    // Cleanup: Clear database after each test
+    // After EACH test: clean up data so tests don't affect each other
     afterEach(async () => {
-        await User.destroy({ where: {}, truncate: true });
-        await redisClient.flushAll().catch(() => { }); // Clear Redis
+        await User.destroy({ where: {}, truncate: true });   // Delete all users
+        await redisClient.flushAll().catch(() => { });        // Clear all Redis data
     });
 
-    // Teardown: Close connections after all tests
+    // After ALL tests: close connections
     afterAll(async () => {
-        await sequelize.close();
-        await redisClient.quit().catch(() => { });
+        await sequelize.close();                       // Close database connection
+        await redisClient.quit().catch(() => { });     // Close Redis connection
     });
 
     /* ===========================
@@ -44,6 +59,7 @@ describe('Auth Controller Integration Tests', () => {
     =========================== */
     describe('POST /api/v1/auth/register', () => {
 
+        // Test: Check if a new user can register successfully
         test('Should register a new user successfully', async () => {
             const userData = {
                 username: 'testuser',
@@ -52,27 +68,30 @@ describe('Auth Controller Integration Tests', () => {
                 role: 'user'
             };
 
+            // Send registration request
             const response = await request(app)
                 .post('/api/v1/auth/register')
                 .send(userData)
-                .expect(200);
+                .expect(200);                          // Expect 200 OK
 
+            // Check response data
             expect(response.body.success).toBe(true);
             expect(response.body.message).toContain('registered successfully');
             expect(response.body.data.userId).toBeDefined();
 
-            // Verify user was created in database
+            // Verify user exists in database
             const user = await User.findOne({ where: { email: userData.email } });
             expect(user).toBeDefined();
             expect(user.username).toBe(userData.username);
             expect(user.email).toBe(userData.email);
 
-            // Verify password is hashed
+            // Verify password was hashed (not stored as plain text!)
             expect(user.password).not.toBe(userData.password);
             const isPasswordValid = await bcrypt.compare(userData.password, user.password);
             expect(isPasswordValid).toBe(true);
         });
 
+        // Test: Duplicate email should be rejected
         test('Should reject registration with existing email', async () => {
             // Create a user first
             await User.create({
@@ -82,7 +101,7 @@ describe('Auth Controller Integration Tests', () => {
                 role: 'user'
             });
 
-            // Try to register with same email
+            // Try to register with the same email
             const response = await request(app)
                 .post('/api/v1/auth/register')
                 .send({
@@ -90,12 +109,13 @@ describe('Auth Controller Integration Tests', () => {
                     email: 'existing@example.com',
                     password: 'StrongPass123!'
                 })
-                .expect(400);
+                .expect(400);                          // Expect 400 Bad Request
 
             expect(response.body.success).toBe(false);
             expect(response.body.message).toContain('already exists');
         });
 
+        // Test: Missing required fields should be rejected
         test('Should reject registration with missing fields', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/register')
@@ -108,6 +128,7 @@ describe('Auth Controller Integration Tests', () => {
             expect(response.body.success).toBe(false);
         });
 
+        // Test: Default role should be "user" if not specified
         test('Should set default role to "user" if not provided', async () => {
             const userData = {
                 username: 'testuser',
@@ -121,6 +142,7 @@ describe('Auth Controller Integration Tests', () => {
                 .send(userData)
                 .expect(200);
 
+            // Check database to confirm role is "user"
             const user = await User.findOne({ where: { email: userData.email } });
             expect(user.role).toBe('user');
         });
@@ -133,8 +155,8 @@ describe('Auth Controller Integration Tests', () => {
 
         let testUser;
 
+        // Before each login test: create a test user
         beforeEach(async () => {
-            // Create a test user before each login test
             testUser = await User.create({
                 username: 'logintest',
                 email: 'login@example.com',
@@ -143,6 +165,7 @@ describe('Auth Controller Integration Tests', () => {
             });
         });
 
+        // Test: Correct credentials should return tokens
         test('Should login successfully with correct credentials', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/login')
@@ -154,10 +177,10 @@ describe('Auth Controller Integration Tests', () => {
 
             expect(response.body.success).toBe(true);
             expect(response.body.message).toContain('Login successful');
-            expect(response.body.data.accessToken).toBeDefined();
-            expect(response.body.data.refreshToken).toBeDefined();
+            expect(response.body.data.accessToken).toBeDefined();    // JWT access token
+            expect(response.body.data.refreshToken).toBeDefined();   // JWT refresh token
 
-            // Verify CSRF token in header
+            // Verify CSRF token is in response header
             expect(response.headers['x-csrf-token']).toBeDefined();
 
             // Verify refresh token cookie is set
@@ -166,6 +189,7 @@ describe('Auth Controller Integration Tests', () => {
             expect(cookies.some(cookie => cookie.includes('refreshToken'))).toBe(true);
         });
 
+        // Test: Wrong password should be rejected
         test('Should reject login with incorrect password', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/login')
@@ -173,12 +197,13 @@ describe('Auth Controller Integration Tests', () => {
                     email: 'login@example.com',
                     password: 'WrongPassword123!'
                 })
-                .expect(401);
+                .expect(401);                          // 401 Unauthorized
 
             expect(response.body.success).toBe(false);
             expect(response.body.message).toContain('Incorrect email or password');
         });
 
+        // Test: Non-existent email should be rejected
         test('Should reject login with non-existent email', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/login')
@@ -192,6 +217,7 @@ describe('Auth Controller Integration Tests', () => {
             expect(response.body.message).toContain('Incorrect email or password');
         });
 
+        // Test: Refresh token should be saved to database after login
         test('Should save refresh token to database on login', async () => {
             await request(app)
                 .post('/api/v1/auth/login')
@@ -201,12 +227,13 @@ describe('Auth Controller Integration Tests', () => {
                 })
                 .expect(200);
 
-            // Verify refresh token was saved
+            // Check that refresh token is saved in the User record
             const user = await User.findByPk(testUser.id);
             expect(user.refreshToken).toBeDefined();
             expect(user.refreshToken).not.toBeNull();
         });
 
+        // Test: CSRF token should be stored in Redis after login
         test('Should save CSRF token to Redis on login', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/login')
@@ -216,7 +243,7 @@ describe('Auth Controller Integration Tests', () => {
                 })
                 .expect(200);
 
-            // Verify CSRF token in Redis
+            // Get CSRF token from header and verify it's in Redis
             const csrfToken = response.headers['x-csrf-token'];
             const storedToken = await redisClient.get(`csrf:${testUser.id}`);
             expect(storedToken).toBe(csrfToken);
@@ -231,8 +258,8 @@ describe('Auth Controller Integration Tests', () => {
         let testUser;
         let refreshToken;
 
+        // Before each test: create user, login, and save the refresh token
         beforeEach(async () => {
-            // Create user and login to get refresh token
             testUser = await User.create({
                 username: 'logouttest',
                 email: 'logout@example.com',
@@ -240,6 +267,7 @@ describe('Auth Controller Integration Tests', () => {
                 role: 'user'
             });
 
+            // Login to get a refresh token
             const loginResponse = await request(app)
                 .post('/api/v1/auth/login')
                 .send({
@@ -250,6 +278,7 @@ describe('Auth Controller Integration Tests', () => {
             refreshToken = loginResponse.body.data.refreshToken;
         });
 
+        // Test: Logout should clear refresh token from database and cookies
         test('Should logout successfully and clear refresh token', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/logout')
@@ -269,6 +298,7 @@ describe('Auth Controller Integration Tests', () => {
             expect(cookies.some(cookie => cookie.includes('refreshToken=;'))).toBe(true);
         });
 
+        // Test: Logout without providing refresh token should fail
         test('Should reject logout without refresh token', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/logout')
@@ -278,6 +308,7 @@ describe('Auth Controller Integration Tests', () => {
             expect(response.body.message).toContain('Refresh token missing');
         });
 
+        // Test: Logout with invalid token should fail
         test('Should reject logout with invalid refresh token', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/logout')
@@ -297,6 +328,7 @@ describe('Auth Controller Integration Tests', () => {
         let testUser;
         let refreshToken;
 
+        // Before each test: create user and login
         beforeEach(async () => {
             testUser = await User.create({
                 username: 'refreshtest',
@@ -315,6 +347,7 @@ describe('Auth Controller Integration Tests', () => {
             refreshToken = loginResponse.body.data.refreshToken;
         });
 
+        // Test: Valid refresh token should give a new access token
         test('Should generate new access token with valid refresh token', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/refresh-token')
@@ -324,9 +357,10 @@ describe('Auth Controller Integration Tests', () => {
             expect(response.body.success).toBe(true);
             expect(response.body.message).toContain('Token refreshed successfully');
             expect(response.body.data.accessToken).toBeDefined();
-            expect(response.body.data.accessToken).not.toBe(refreshToken);
+            expect(response.body.data.accessToken).not.toBe(refreshToken);  // Should be different
         });
 
+        // Test: Invalid token should be rejected
         test('Should reject refresh with invalid token', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/refresh-token')
@@ -337,6 +371,7 @@ describe('Auth Controller Integration Tests', () => {
             expect(response.body.message).toContain('Invalid refresh token');
         });
 
+        // Test: Missing token should be rejected
         test('Should reject refresh without token', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/refresh-token')
@@ -364,6 +399,7 @@ describe('Auth Controller Integration Tests', () => {
             });
         });
 
+        // Test: Should create a reset token for valid email
         test('Should send password reset email for existing user', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/forgot-password')
@@ -380,17 +416,19 @@ describe('Auth Controller Integration Tests', () => {
             expect(new Date(user.resetPasswordExpires).getTime()).toBeGreaterThan(Date.now());
         });
 
+        // Test: Non-existent email should still return success (to prevent email enumeration attacks)
         test('Should return generic message for non-existent email (security)', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/forgot-password')
                 .send({ email: 'nonexistent@example.com' })
                 .expect(200);
 
-            // Should still return success to prevent email enumeration
+            // Returns success even for non-existent emails (security best practice)
             expect(response.body.success).toBe(true);
             expect(response.body.message).toContain('password reset link has been sent');
         });
 
+        // Test: Reset token should be hashed before saving (not stored in plain text)
         test('Should hash reset token before saving to database', async () => {
             await request(app)
                 .post('/api/v1/auth/forgot-password')
@@ -399,7 +437,7 @@ describe('Auth Controller Integration Tests', () => {
 
             const user = await User.findByPk(testUser.id);
 
-            // Token should be 64 characters (SHA-256 hash in hex)
+            // Token should be a 64-character hex string (SHA-256 hash)
             expect(user.resetPasswordToken).toHaveLength(64);
             expect(user.resetPasswordToken).toMatch(/^[a-f0-9]{64}$/);
         });
@@ -413,12 +451,13 @@ describe('Auth Controller Integration Tests', () => {
         let testUser;
         let resetToken;
 
+        // Before each test: create user with a valid reset token
         beforeEach(async () => {
             const crypto = await import('crypto');
 
-            // Generate reset token
-            resetToken = crypto.randomBytes(32).toString('hex');
-            const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+            // Generate a random reset token and hash it
+            resetToken = crypto.randomBytes(32).toString('hex');        // Plain token (sent via email)
+            const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');  // Hashed (stored in DB)
 
             testUser = await User.create({
                 username: 'resettest',
@@ -426,10 +465,11 @@ describe('Auth Controller Integration Tests', () => {
                 password: await bcrypt.hash('OldPassword123!', 10),
                 role: 'user',
                 resetPasswordToken: hashedToken,
-                resetPasswordExpires: Date.now() + 3600000 // 1 hour from now
+                resetPasswordExpires: Date.now() + 3600000              // Expires in 1 hour
             });
         });
 
+        // Test: Valid token should reset the password
         test('Should reset password successfully with valid token', async () => {
             const newPassword = 'NewPassword123!';
 
@@ -444,16 +484,17 @@ describe('Auth Controller Integration Tests', () => {
             expect(response.body.success).toBe(true);
             expect(response.body.message).toContain('Password reset successful');
 
-            // Verify password was changed
+            // Verify password was actually changed
             const user = await User.findByPk(testUser.id);
             const isNewPasswordValid = await bcrypt.compare(newPassword, user.password);
             expect(isNewPasswordValid).toBe(true);
 
-            // Verify reset token was cleared
+            // Verify reset token was cleared after use
             expect(user.resetPasswordToken).toBeNull();
             expect(user.resetPasswordExpires).toBeNull();
         });
 
+        // Test: Invalid token should be rejected
         test('Should reject reset with invalid token', async () => {
             const response = await request(app)
                 .post('/api/v1/auth/reset-password')
@@ -467,17 +508,19 @@ describe('Auth Controller Integration Tests', () => {
             expect(response.body.message).toContain('Invalid or expired reset token');
         });
 
+        // Test: Expired token should be rejected
         test('Should reject reset with expired token', async () => {
             const crypto = await import('crypto');
 
-            // Create expired token
+            // Create a token that's already expired
             const expiredToken = crypto.randomBytes(32).toString('hex');
             const hashedExpiredToken = crypto.createHash('sha256').update(expiredToken).digest('hex');
 
+            // Update user with the expired token
             await User.update(
                 {
                     resetPasswordToken: hashedExpiredToken,
-                    resetPasswordExpires: Date.now() - 1000 // Expired 1 second ago
+                    resetPasswordExpires: Date.now() - 1000            // Expired 1 second ago
                 },
                 { where: { id: testUser.id } }
             );
@@ -494,6 +537,7 @@ describe('Auth Controller Integration Tests', () => {
             expect(response.body.message).toContain('Invalid or expired reset token');
         });
 
+        // Test: New password should be hashed, not stored as plain text
         test('Should hash new password before saving', async () => {
             const newPassword = 'NewPassword123!';
 
@@ -507,9 +551,9 @@ describe('Auth Controller Integration Tests', () => {
 
             const user = await User.findByPk(testUser.id);
 
-            // Password should be hashed, not plain text
+            // Password should be bcrypt hashed, not plain text
             expect(user.password).not.toBe(newPassword);
-            expect(user.password).toMatch(/^\$2[aby]\$/); // bcrypt hash pattern
+            expect(user.password).toMatch(/^\$2[aby]\$/);              // bcrypt hash pattern
         });
     });
 
@@ -522,6 +566,7 @@ describe('Auth Controller Integration Tests', () => {
         let accessToken;
         let csrfToken;
 
+        // Before each test: create user and login to get tokens
         beforeEach(async () => {
             testUser = await User.create({
                 username: 'profiletest',
@@ -541,6 +586,7 @@ describe('Auth Controller Integration Tests', () => {
             csrfToken = loginResponse.headers['x-csrf-token'];
         });
 
+        // Test: Valid token + CSRF should return profile data
         test('Should get profile with valid token and CSRF', async () => {
             const response = await request(app)
                 .get('/api/v1/auth/profile')
@@ -553,6 +599,7 @@ describe('Auth Controller Integration Tests', () => {
             expect(response.body.data.userId).toBe(testUser.id);
         });
 
+        // Test: Missing token should be rejected
         test('Should reject profile request without token', async () => {
             const response = await request(app)
                 .get('/api/v1/auth/profile')
@@ -561,6 +608,7 @@ describe('Auth Controller Integration Tests', () => {
             expect(response.body.success).toBe(false);
         });
 
+        // Test: Invalid token should be rejected
         test('Should reject profile request with invalid token', async () => {
             const response = await request(app)
                 .get('/api/v1/auth/profile')

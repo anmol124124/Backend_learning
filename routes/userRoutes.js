@@ -1,19 +1,30 @@
+// ---------------------------------------------------------
+// USER ROUTES
+// ---------------------------------------------------------
+// This file defines URL paths for user profile operations
+
+// Import Express framework
 import express from "express";
+// Import auth middleware (most user routes require login)
 import authMiddleware from "../middleware/authMiddleware.js";
+// Import file upload middleware for avatar uploads
 import upload from "../middleware/upload.js";
+// Import user controller functions
 import {
-    getMyProfile,
-    getPublicProfile,
-    updateProfile,
-    changePassword,
-    updateAvatar
+    getMyProfile,          // Get the logged-in user's own profile
+    getPublicProfile,      // Get any user's public profile
+    updateProfile,         // Update username, bio, avatar
+    changePassword,        // Change the user's password
+    updateAvatar           // Upload a new profile picture
 } from "../controllers/userController.js";
+// Import validation schemas for user data
 import {
-    validate,
-    updateProfileSchema,
-    changePasswordSchema
+    validate,                 // Validation middleware wrapper
+    updateProfileSchema,      // Rules for profile updates
+    changePasswordSchema      // Rules for password changes
 } from "../validators/userValidator.js";
 
+// Create a new Express router
 const router = express.Router();
 
 /**
@@ -37,6 +48,7 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
+// GET /api/v1/users/profile → Get your own profile (requires login)
 router.get("/profile", authMiddleware, getMyProfile);
 
 /**
@@ -63,6 +75,8 @@ router.get("/profile", authMiddleware, getMyProfile);
  *       200:
  *         description: Profile updated successfully
  */
+// PUT /api/v1/users/profile → Update your profile (username, bio, avatar URL)
+// Pipeline: auth check → validate input → update controller
 router.put("/profile", authMiddleware, validate(updateProfileSchema), updateProfile);
 
 /**
@@ -87,6 +101,8 @@ router.put("/profile", authMiddleware, validate(updateProfileSchema), updateProf
  *       200:
  *         description: Avatar uploaded successfully
  */
+// POST /api/v1/users/avatar → Upload a new profile picture
+// Pipeline: auth check → multer processes file → update avatar in database
 router.post("/avatar", authMiddleware, upload.single("file"), updateAvatar);
 
 /**
@@ -118,6 +134,7 @@ router.post("/avatar", authMiddleware, upload.single("file"), updateAvatar);
  *       200:
  *         description: Password changed successfully
  */
+// PUT /api/v1/users/change-password → Change your password (requires current password)
 router.put("/change-password", authMiddleware, validate(changePasswordSchema), changePassword);
 
 /**
@@ -138,6 +155,8 @@ router.put("/change-password", authMiddleware, validate(changePasswordSchema), c
  *       404:
  *         description: User not found
  */
+// GET /api/v1/users/:id → Get any user's public profile (no login required)
 router.get("/:id", getPublicProfile);
 
+// Export this router
 export default router;

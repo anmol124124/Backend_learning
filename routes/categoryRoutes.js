@@ -1,11 +1,20 @@
+// ---------------------------------------------------------
+// CATEGORY ROUTES
+// ---------------------------------------------------------
+// This file defines URL paths for category operations
+
+// Import Express framework
 import express from "express";
+// Import optional auth (user might or might not be logged in)
 import optionalAuth from "../middleware/optionalAuth.js";
+// Import category controller functions
 import {
-    getAllCategories,
-    getCategoryBySlug,
-    getPostsByCategory
+    getAllCategories,       // Get list of all categories
+    getCategoryBySlug,     // Get a single category by its URL slug
+    getPostsByCategory     // Get all posts in a category
 } from "../controllers/categoryController.js";
 
+// Create a new Express router
 const router = express.Router();
 
 /**
@@ -25,6 +34,8 @@ const router = express.Router();
  *       200:
  *         description: Categories fetched successfully
  */
+// GET /api/v1/categories → Returns list of all available categories
+// No auth required - anyone can see categories
 router.get("/", getAllCategories);
 
 /**
@@ -45,6 +56,7 @@ router.get("/", getAllCategories);
  *       404:
  *         description: Category not found
  */
+// GET /api/v1/categories/:slug → Get details of a specific category (e.g., /categories/technology)
 router.get("/:slug", getCategoryBySlug);
 
 /**
@@ -73,6 +85,9 @@ router.get("/:slug", getCategoryBySlug);
  *       404:
  *         description: Category not found
  */
+// GET /api/v1/categories/:slug/posts → Get all posts in a category
+// Uses optionalAuth: if logged in, shows like status; if not, still works
 router.get("/:slug/posts", optionalAuth, getPostsByCategory);
 
+// Export this router
 export default router;

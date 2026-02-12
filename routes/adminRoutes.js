@@ -1,25 +1,40 @@
+// ---------------------------------------------------------
+// ADMIN ROUTES
+// ---------------------------------------------------------
+// This file defines all the URL paths (routes) for admin-only functionality
+// All routes here require admin authentication
+
+// Import Express framework for creating routes
 import express from "express";
+// Import authentication middleware (checks if user is logged in)
 import authMiddleware from "../middleware/authMiddleware.js";
+// Import role-checking middleware (checks if user has the right role)
 import { allowRoles } from "../middleware/roleMiddleware.js";
+// Import the controller functions that handle each admin action
 import {
-    getAllUsers,
-    updateUserRole,
-    banUser,
-    unbanUser,
-    getDashboardStats,
-    getAllPostsAdmin
+    getAllUsers,           // Get list of all users
+    updateUserRole,       // Change a user's role (user → admin)
+    banUser,              // Ban a user from the platform
+    unbanUser,            // Unban a previously banned user
+    getDashboardStats,    // Get dashboard analytics (total users, posts, etc.)
+    getAllPostsAdmin       // Get all posts for moderation
 } from "../controllers/adminController.js";
+// Import validation schemas (check if request data is valid before processing)
 import {
-    validate,
-    updateRoleSchema,
-    banSchema
+    validate,             // Validation middleware wrapper
+    updateRoleSchema,     // Rules for role update requests
+    banSchema             // Rules for ban requests
 } from "../validators/adminValidator.js";
 
+// Create a new Express router (a mini-app that handles routes)
 const router = express.Router();
 
-// All admin routes require authentication AND admin role
-router.use(authMiddleware);
-router.use(allowRoles('admin'));  // Pass string directly, not array
+// ---------------------------------------------------------
+// APPLY MIDDLEWARE TO ALL ADMIN ROUTES
+// ---------------------------------------------------------
+// These middleware run BEFORE every route below:
+router.use(authMiddleware);              // Step 1: Check if user is logged in
+router.use(allowRoles('admin'));         // Step 2: Check if user has "admin" role
 
 /**
  * @swagger
@@ -27,7 +42,7 @@ router.use(allowRoles('admin'));  // Pass string directly, not array
  *   name: Admin
  *   description: Admin panel APIs (Admin only)
  */
-
+6 
 /**
  * @swagger
  * /api/v1/admin/stats:
@@ -42,6 +57,7 @@ router.use(allowRoles('admin'));  // Pass string directly, not array
  *       403:
  *         description: Forbidden - Admin only
  */
+// GET /api/v1/admin/stats → Returns dashboard stats (total users, posts, likes, etc.)
 router.get("/stats", getDashboardStats);
 
 /**
@@ -69,6 +85,7 @@ router.get("/stats", getDashboardStats);
  *       200:
  *         description: Users fetched successfully
  */
+// GET /api/v1/admin/users → Returns list of all users with search & pagination
 router.get("/users", getAllUsers);
 
 /**
@@ -101,6 +118,7 @@ router.get("/users", getAllUsers);
  *       200:
  *         description: User role updated successfully
  */
+// PUT /api/v1/admin/users/:id/role → Change a user's role (validate input first)
 router.put("/users/:id/role", validate(updateRoleSchema), updateUserRole);
 
 /**
@@ -121,6 +139,7 @@ router.put("/users/:id/role", validate(updateRoleSchema), updateUserRole);
  *       200:
  *         description: User banned successfully
  */
+// PUT /api/v1/admin/users/:id/ban → Ban a user (validate input first)
 router.put("/users/:id/ban", validate(banSchema), banUser);
 
 /**
@@ -141,6 +160,7 @@ router.put("/users/:id/ban", validate(banSchema), banUser);
  *       200:
  *         description: User unbanned successfully
  */
+// PUT /api/v1/admin/users/:id/unban → Unban a previously banned user
 router.put("/users/:id/unban", unbanUser);
 
 /**
@@ -168,6 +188,8 @@ router.put("/users/:id/unban", unbanUser);
  *       200:
  *         description: Posts fetched successfully
  */
+// GET /api/v1/admin/posts → Returns all posts for admin moderation
 router.get("/posts", getAllPostsAdmin);
 
+// Export this router so it can be mounted in the main app.js file
 export default router;

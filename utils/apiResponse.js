@@ -1,40 +1,49 @@
-// utils/apiResponse.js
+// ---------------------------------------------------------
+// API RESPONSE HELPERS
+// ---------------------------------------------------------
+// These helper functions create consistent, standardized API responses
+// Using these ensures every response has the same format: { success, message, data/errors }
 
+/**
+ * Send a successful response (200 OK)
+ * Used for: successful fetches, updates, etc.
+ */
 export const successResponse = (res, message, data = {}) => {
   return res.status(200).json({
-    success: true,
-    message,
-    data,
-  });
-};
-
-export const errorResponse = (res, message, status = 500, errors = null) => {
-  return res.status(status).json({
-    success: false,
-    message,
-    errors,
+    success: true,            // Indicates the request was successful
+    message,                  // A human-readable success message
+    data,                     // Any data to send back (optional)
   });
 };
 
 /**
- * Success response with custom data and status code
- * @param {Object} res - Express response object
- * @param {string} message - Success message
- * @param {Object} data - Response data
- * @param {number} statusCode - HTTP status code (default: 200)
+ * Send an error response (defaults to 500 Internal Server Error)
+ * Used for: failed operations, validation errors, etc.
+ */
+export const errorResponse = (res, message, status = 500, errors = null) => {
+  return res.status(status).json({
+    success: false,           // Indicates the request failed
+    message,                  // A human-readable error message
+    errors,                   // Detailed error info (optional)
+  });
+};
+
+/**
+ * Send a success response with custom data and status code
+ * Used for: responses where you need to spread data at the top level
+ * (e.g., pagination info alongside the actual data)
  */
 export const successWithData = (res, message, data = {}, statusCode = 200) => {
   return res.status(statusCode).json({
     success: true,
     message,
-    ...data,
+    ...data,                  // Spread the data object's properties into the response
   });
 };
 
 /**
- * Unauthorized response (401)
- * @param {Object} res - Express response object
- * @param {string} message - Error message
+ * Send an unauthorized response (401)
+ * Used for: missing or invalid authentication
  */
 export const unauthorized = (res, message = "Unauthorized") => {
   return res.status(401).json({
@@ -44,9 +53,8 @@ export const unauthorized = (res, message = "Unauthorized") => {
 };
 
 /**
- * Forbidden response (403)
- * @param {Object} res - Express response object
- * @param {string} message - Error message
+ * Send a forbidden response (403)
+ * Used for: user is logged in but doesn't have permission
  */
 export const forbidden = (res, message = "Forbidden") => {
   return res.status(403).json({

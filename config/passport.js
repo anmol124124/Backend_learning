@@ -1,149 +1,152 @@
-// Import passport library (used for authentication)
+// ---------------------------------------------------------
+// PASSPORT.JS CONFIGURATION (Social Login / OAuth)
+// ---------------------------------------------------------
+// This file configures Google and GitHub login strategies
+// When a user clicks "Login with Google/GitHub", Passport handles the flow
+
+// Import Passport.js library (handles authentication flows)
 import passport from "passport";
+// Import our centralized config for OAuth credentials
 import config from "./index.js";
 
-// Import Google OAuth strategy from passport
-// This helps us login users using Google account
+// Import Google OAuth 2.0 strategy for "Login with Google"
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 
-// Import User model (table) to save / find users in database
+// Import User model to find or create users in our database
 import User from "../models/User.js";
 
+// Import GitHub OAuth strategy for "Login with GitHub"
 import { Strategy as GitHubStrategy } from "passport-github2";
 
 
-// Tell passport that we want to use Google login
+// =============================================================
+// GOOGLE LOGIN STRATEGY
+// =============================================================
+// Configure Passport to use Google for authentication
 passport.use(
   new GoogleStrategy(
     {
-      // Google gives us CLIENT_ID (who we are)
-      clientID: config.oauth.google.clientId,
-      clientSecret: config.oauth.google.clientSecret,
-      callbackURL: config.oauth.google.callbackUrl,
+      // Our Google app credentials (from Google Cloud Console)
+      clientID: config.oauth.google.clientId,           // Identifies our app to Google
+      clientSecret: config.oauth.google.clientSecret,   // Our app's secret key
+      callbackURL: config.oauth.google.callbackUrl,     // Where Google sends users back
     },
 
     // This function runs AFTER Google login is successful
-    // Google sends us user data in "profile"
+    // Google gives us the user's profile data
     async (accessToken, refreshToken, profile, done) => {
       try {
-        // Get user's email from Google profile
+        // Extract email from the Google profile
         const email = profile.emails[0].value;
 
-        // Get unique Google user ID
+        // Extract Google's unique user ID
         const googleId = profile.id;
 
-        // Get user's name from Google
+        // Extract the user's display name
         const name = profile.displayName;
 
-        // --------------------------------------
-        // STEP 1️⃣: Check if user already exists
-        // We ONLY check by email
-        // --------------------------------------
+        // Check if a user with this email already exists in our database
         let user = await User.findOne({
           where: { email },
         });
 
-        // --------------------------------------
-        // STEP 2️⃣: If user already exists in DB
-        // --------------------------------------
+        // If user already exists in our database
         if (user) {
 
-          // If this user was created earlier using normal signup
-          // then provider & providerId might be empty
+          // If this user signed up with email/password before (no OAuth linked)
+          // Link their account with Google now
           if (!user.provider || !user.providerId) {
-
-            // Now link this account with Google
-            user.provider = "google";
-            user.providerId = googleId;
-
-            // Save updated user data
-            await user.save();
+            user.provider = "google";        // Mark that they're now linked with Google
+            user.providerId = googleId;      // Store their Google ID
+            await user.save();               // Save the changes
           }
 
-          // Login successful → send user data to passport
+          // User found → login successful
           return done(null, user);
         }
 
-        // --------------------------------------
-        // STEP 3️⃣: If user does NOT exist
-        // Create a brand new user
-        // --------------------------------------
+        // If user doesn't exist → create a brand new account
         user = await User.create({
-          username: name,          // Google name
-          email: email,            // Google email
-
-          // Dummy password because Google users don't need password
-          password: "GOOGLE_OAUTH_USER",
-
-          role: "user",            // Default role
-          provider: "google",      // Login method
-          providerId: googleId,    // Google unique ID
+          username: name,                    // Use their Google name
+          email: email,                      // Use their Google email
+          password: "GOOGLE_OAUTH_USER",     // Placeholder password (Google users don't need one)
+          role: "user",                      // Default role for new users
+          provider: "google",                // Mark as Google login
+          providerId: googleId,              // Store their Google ID
         });
 
-        // Login successful → send new user data
+        // New user created → login successful
         return done(null, user);
 
       } catch (error) {
-        // If anything goes wrong, send error to passport
+        // If anything goes wrong, pass the error to Passport
         return done(error, null);
       }
     }
   )
 );
 
-// GitHub OAuth Strategy
+// =============================================================
+// GITHUB LOGIN STRATEGY
+// =============================================================
+// Configure Passport to use GitHub for authentication
 passport.use(
   new GitHubStrategy(
     {
+      // Our GitHub app credentials (from GitHub Developer Settings)
       clientID: config.oauth.github.clientId,
       clientSecret: config.oauth.github.clientSecret,
       callbackURL: config.oauth.github.callbackUrl,
     },
+    // This function runs AFTER GitHub login is successful
     async (accessToken, refreshToken, profile, done) => {
       try {
-        // Get user's email from GitHub profile
+        // Get email from GitHub (some users don't have public email, so we create one)
         const email = profile.emails?.[0]?.value || `${profile.username}@github.com`;
 
-        // Get unique GitHub user ID
+        // Get GitHub's unique user ID
         const githubId = profile.id;
 
-        // Get user's name from GitHub
+        // Get the user's name (fall back to username if display name is empty)
         const name = profile.displayName || profile.username;
 
-        // Check if user already exists by email
+        // Check if a user with this email already exists
         let user = await User.findOne({
           where: { email },
         });
 
-        // If user exists
+        // If user already exists
         if (user) {
-          // Link account with GitHub if not already linked
+          // Link their account with GitHub if not already linked
           if (!user.provider || !user.providerId) {
             user.provider = "github";
             user.providerId = githubId;
             await user.save();
           }
 
+          // User found → login successful
           return done(null, user);
         }
 
-        // Create new user if doesn't exist
+        // Create new user if they don't exist
         user = await User.create({
           username: name,
           email: email,
-          password: "GITHUB_OAUTH_USER", // Dummy password
+          password: "GITHUB_OAUTH_USER",     // Placeholder password
           role: "user",
           provider: "github",
           providerId: githubId,
         });
 
+        // New user created → login successful
         return done(null, user);
       } catch (error) {
+        // Pass any errors to Passport
         return done(error, null);
       }
     }
   )
 );
 
-// Export passport so it can be used in app.js
+// Export the configured Passport instance
 export default passport;

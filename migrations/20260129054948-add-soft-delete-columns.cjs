@@ -1,21 +1,26 @@
+// ---------------------------------------------------------
+// MIGRATION: Add Soft Delete Columns
+// ---------------------------------------------------------
+// Soft delete means: instead of permanently deleting a record,
+// we just set a "deletedAt" timestamp. The record stays in the
+// database but is hidden from normal queries.
+// This allows us to "undelete" records if needed!
+//
+// Tables affected: Posts, Comments, Likes
+
 'use strict';
 
-/**
- * Migration: Add Soft Delete Support
- * 
- * Adds deletedAt column to Posts, Comments, and Likes tables
- * for soft delete functionality (paranoid mode).
- */
-
 module.exports = {
+  // "up" adds the deletedAt column to three tables
   async up(queryInterface, Sequelize) {
     console.log('Adding deletedAt columns for soft deletes...');
 
     // Add deletedAt to Posts table
+    // When a post is "deleted", this gets set to the current date/time
     await queryInterface.addColumn('Posts', 'deletedAt', {
       type: Sequelize.DATE,
-      allowNull: true,
-      defaultValue: null
+      allowNull: true,                // null means the record is NOT deleted
+      defaultValue: null              // Default: not deleted
     });
     console.log('✅ Added deletedAt to Posts');
 
@@ -38,6 +43,7 @@ module.exports = {
     console.log('\n🎉 Soft delete columns added successfully!');
   },
 
+  // "down" removes the deletedAt columns (reverses the migration)
   async down(queryInterface, Sequelize) {
     console.log('Removing deletedAt columns...');
 

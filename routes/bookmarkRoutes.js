@@ -1,7 +1,16 @@
+// ---------------------------------------------------------
+// BOOKMARK ROUTES
+// ---------------------------------------------------------
+// This file defines URL paths for bookmark operations (save/unsave posts)
+
+// Import Express framework for creating routes
 import express from "express";
+// Import bookmark controller functions
 import { toggleBookmark, getUserBookmarks } from "../controllers/bookmarkController.js";
+// Import auth middleware (bookmarks require login)
 import authMiddleware from "../middleware/authMiddleware.js";
 
+// Create a new Express router
 const router = express.Router();
 
 /**
@@ -34,6 +43,8 @@ const router = express.Router();
  *       404:
  *         description: Post not found
  */
+// POST /api/v1/bookmarks/:postId/toggle → Add or remove bookmark (like a switch)
+// Requires login (authMiddleware) to know WHICH user is bookmarking
 router.post("/:postId/toggle", authMiddleware, toggleBookmark);
 
 /**
@@ -63,6 +74,9 @@ router.post("/:postId/toggle", authMiddleware, toggleBookmark);
  *       401:
  *         description: Unauthorized
  */
+// GET /api/v1/bookmarks/my-bookmarks → Get all posts the logged-in user has saved
+// Requires login to know which user's bookmarks to fetch
 router.get("/my-bookmarks", authMiddleware, getUserBookmarks);
 
+// Export this router so it can be mounted in the main app.js
 export default router;

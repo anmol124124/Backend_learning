@@ -1,133 +1,146 @@
 // ---------------------------------------------------------
-// IMPORT ALL MODELS (ONLY ONCE)
+// ASSOCIATIONS FILE (Database Relationships)
 // ---------------------------------------------------------
-import User from "./User.js";
-import Post from "./Post.js";
-import Comment from "./Comment.js";
-import Like from "./Like.js";
-import Tag from "./Tag.js";
-import PostTag from "./PostTag.js";
-import Category from "./Category.js";
-import Bookmark from "./Bookmark.js";
+// This file defines HOW all the database tables are connected to each other
+// Think of it as drawing lines between tables showing "this relates to that"
 
 // ---------------------------------------------------------
-// USER → POSTS (1 user = many posts)
+// IMPORTING ALL MODELS (loading all table definitions)
 // ---------------------------------------------------------
-User.hasMany(Post, { // ek user ke kai posts ho sakte hain
-  foreignKey: "userId", // Posts table me userId column hoga
-  onDelete: "CASCADE" //  user delete hua to uske posts bhi delete ho jayenge
+import User from "./User.js";           // Users table
+import Post from "./Post.js";           // Posts table
+import Comment from "./Comment.js";     // Comments table
+import Like from "./Like.js";           // Likes table
+import Tag from "./Tag.js";             // Tags table
+import PostTag from "./PostTag.js";     // PostTags join table (connects posts & tags)
+import Category from "./Category.js";   // Categories table
+import Bookmark from "./Bookmark.js";   // Bookmarks table
+
+// ---------------------------------------------------------
+// USER → POSTS (One-to-Many: 1 user can write many posts)
+// ---------------------------------------------------------
+// "hasMany" means: one User has many Posts
+User.hasMany(Post, {
+  foreignKey: "userId",     // Posts table has a "userId" column pointing to this user
+  onDelete: "CASCADE"       // If a user is deleted, ALL their posts are also deleted
 });
 
-Post.belongsTo(User, { // har post ka ek user hoga
-  foreignKey: "userId" // Posts table me userId column hoga
+// "belongsTo" means: each Post belongs to one User (the author)
+Post.belongsTo(User, {
+  foreignKey: "userId"      // The "userId" column in Posts links back to Users
 });
 
 
 // ---------------------------------------------------------
-// USER → COMMENTS (1 user = many comments)
+// USER → COMMENTS (One-to-Many: 1 user can write many comments)
 // ---------------------------------------------------------
 User.hasMany(Comment, {
-  foreignKey: "userId",
-  onDelete: "CASCADE"
+  foreignKey: "userId",     // Comments table has a "userId" column
+  onDelete: "CASCADE"       // Delete user = delete their comments
 });
 
 Comment.belongsTo(User, {
-  foreignKey: "userId"
+  foreignKey: "userId"      // Each comment links back to the user who wrote it
 });
 
 
 // ---------------------------------------------------------
-// POST → COMMENTS (1 post = many comments)
+// POST → COMMENTS (One-to-Many: 1 post can have many comments)
 // ---------------------------------------------------------
 Post.hasMany(Comment, {
-  foreignKey: "postId",
-  onDelete: "CASCADE"
+  foreignKey: "postId",     // Comments table has a "postId" column
+  onDelete: "CASCADE"       // Delete post = delete its comments
 });
 
 Comment.belongsTo(Post, {
-  foreignKey: "postId"
+  foreignKey: "postId"      // Each comment links back to the post it's on
 });
 
 
 // ---------------------------------------------------------
-// COMMENT → REPLIES (Self Relation Comment → Comment)
+// COMMENT → REPLIES (Self-Referencing: comments can reply to other comments)
 // ---------------------------------------------------------
+// A comment can have many replies (which are also comments)
 Comment.hasMany(Comment, {
-  foreignKey: "parentCommentId",
-  as: "replies",
+  foreignKey: "parentCommentId",  // If this is filled, it's a reply to another comment
+  as: "replies",                   // Access replies as comment.replies
 });
 
+// A reply belongs to a parent comment
 Comment.belongsTo(Comment, {
-  foreignKey: "parentCommentId",
-  as: "parent",
+  foreignKey: "parentCommentId",  // Points to the comment being replied to
+  as: "parent",                    // Access parent as comment.parent
 });
 
-User.belongsToMany(Post, { through: Like, foreignKey: "userId" });
-Post.belongsToMany(User, { through: Like, foreignKey: "postId" });
+// ---------------------------------------------------------
+// USER ↔ POST through LIKE (Many-to-Many: users can like many posts, posts can be liked by many users)
+// ---------------------------------------------------------
+User.belongsToMany(Post, { through: Like, foreignKey: "userId" });  // User likes many posts
+Post.belongsToMany(User, { through: Like, foreignKey: "postId" });  // Post is liked by many users
 
 // ---------------------------------------------------------
-// DIRECT ASSOCIATIONS FOR LIKE (Needed for calculations)
+// DIRECT LIKE ASSOCIATIONS (needed for counting likes in queries)
 // ---------------------------------------------------------
-User.hasMany(Like, { foreignKey: "userId" });
-Like.belongsTo(User, { foreignKey: "userId" });
+User.hasMany(Like, { foreignKey: "userId" });   // One user can have many like records
+Like.belongsTo(User, { foreignKey: "userId" }); // Each like belongs to one user
 
-Post.hasMany(Like, { foreignKey: "postId" });
-Like.belongsTo(Post, { foreignKey: "postId" });
+Post.hasMany(Like, { foreignKey: "postId" });   // One post can have many like records
+Like.belongsTo(Post, { foreignKey: "postId" }); // Each like belongs to one post
 
 // ---------------------------------------------------------
-// POST ↔ TAGS (Many-to-Many)
+// POST ↔ TAGS (Many-to-Many: posts can have many tags, tags can be on many posts)
 // ---------------------------------------------------------
+// Connected through the PostTag join table
 Post.belongsToMany(Tag, {
-  through: PostTag,
-  foreignKey: "postId",
-  as: "tags"
+  through: PostTag,         // The join table connecting posts and tags
+  foreignKey: "postId",     // PostTags table uses "postId"
+  as: "tags"                // Access a post's tags as post.tags
 });
 
 Tag.belongsToMany(Post, {
-  through: PostTag,
-  foreignKey: "tagId",
-  as: "posts"
+  through: PostTag,         // Same join table
+  foreignKey: "tagId",      // PostTags table uses "tagId"
+  as: "posts"               // Access a tag's posts as tag.posts
 });
 
-// Direct associations for PostTag
-Post.hasMany(PostTag, { foreignKey: "postId" });
-PostTag.belongsTo(Post, { foreignKey: "postId" });
+// Direct PostTag associations (needed for some complex queries)
+Post.hasMany(PostTag, { foreignKey: "postId" });    // One post has many PostTag entries
+PostTag.belongsTo(Post, { foreignKey: "postId" });  // Each PostTag entry belongs to one post
 
-Tag.hasMany(PostTag, { foreignKey: "tagId" });
-PostTag.belongsTo(Tag, { foreignKey: "tagId" });
+Tag.hasMany(PostTag, { foreignKey: "tagId" });      // One tag has many PostTag entries
+PostTag.belongsTo(Tag, { foreignKey: "tagId" });    // Each PostTag entry belongs to one tag
 
 // ---------------------------------------------------------
-// CATEGORY → POSTS (1 category = many posts)
+// CATEGORY → POSTS (One-to-Many: 1 category can have many posts)
 // ---------------------------------------------------------
 Category.hasMany(Post, {
-  foreignKey: "categoryId",
-  onDelete: "SET NULL"
+  foreignKey: "categoryId",     // Posts table has a "categoryId" column
+  onDelete: "SET NULL"          // If category is deleted, don't delete posts - just set categoryId to null
 });
 
 Post.belongsTo(Category, {
-  foreignKey: "categoryId",
-  as: "category"
+  foreignKey: "categoryId",     // Links post to its category
+  as: "category"                // Access as post.category
 });
 
 // ---------------------------------------------------------
-// USER → BOOKMARKS (Many-to-Many via Bookmark)
+// USER ↔ POST through BOOKMARK (Many-to-Many: users can bookmark many posts)
 // ---------------------------------------------------------
 User.belongsToMany(Post, {
-  through: Bookmark,
-  as: 'bookmarkedPosts',
-  foreignKey: 'userId',
-  otherKey: 'postId'
+  through: Bookmark,            // Connected through the Bookmarks table
+  as: 'bookmarkedPosts',        // Access as user.bookmarkedPosts
+  foreignKey: 'userId',         // User's ID in the Bookmarks table
+  otherKey: 'postId'            // Post's ID in the Bookmarks table
 });
 
 Post.belongsToMany(User, {
-  through: Bookmark,
-  as: 'bookmarkedBy',
-  foreignKey: 'postId',
-  otherKey: 'userId'
+  through: Bookmark,            // Same Bookmarks table
+  as: 'bookmarkedBy',           // Access as post.bookmarkedBy (users who bookmarked this post)
+  foreignKey: 'postId',         // Post's ID in the Bookmarks table
+  otherKey: 'userId'            // User's ID in the Bookmarks table
 });
 
 // ---------------------------------------------------------
-// EXPORT ALL MODELS (ONLY ONCE)
+// EXPORT ALL MODELS (so other files can import them all from one place)
 // ---------------------------------------------------------
 export { User, Post, Comment, Like, Tag, PostTag, Category, Bookmark };
-

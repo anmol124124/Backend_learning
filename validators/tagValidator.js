@@ -1,13 +1,19 @@
+// ---------------------------------------------------------
+// TAG VALIDATORS
+// ---------------------------------------------------------
+// These validation schemas check if tag data is valid
+
+// Import Joi validation library
 import Joi from 'joi';
 
 // ---------------------------------------------------------
-// VALIDATE FUNCTION (reusable)
+// VALIDATE FUNCTION (Reusable Middleware)
 // ---------------------------------------------------------
 export const validate = (schema) => {
     return (req, res, next) => {
         const { error, value } = schema.validate(req.body, {
-            abortEarly: false,
-            stripUnknown: true,
+            abortEarly: false,           // Show all errors at once
+            stripUnknown: true,          // Remove unknown fields
         });
 
         if (error) {
@@ -21,31 +27,31 @@ export const validate = (schema) => {
             });
         }
 
-        req.body = value;
-        next();
+        req.body = value;                // Use validated data
+        next();                          // Continue to controller
     };
 };
 
 // ---------------------------------------------------------
-// TAG ARRAY VALIDATION
+// TAG ARRAY VALIDATION SCHEMA
 // ---------------------------------------------------------
-// Validates an array of tag names when creating/updating posts
+// Validates an array of tag names (used when adding tags to a post)
 export const tagArraySchema = Joi.array()
     .items(
         Joi.string()
-            .trim()
-            .min(1)
-            .max(50)
-            .pattern(/^[a-zA-Z0-9\s-]+$/) // Letters, numbers, spaces, hyphens
+            .trim()                       // Remove leading/trailing whitespace
+            .min(1)                       // Tag must have at least 1 character
+            .max(50)                      // Tag can be max 50 characters
+            .pattern(/^[a-zA-Z0-9\s-]+$/) // Only letters, numbers, spaces, and hyphens
             .messages({
                 'string.empty': 'Tag name cannot be empty',
                 'string.max': 'Tag name must not exceed 50 characters',
                 'string.pattern.base': 'Tag can only contain letters, numbers, spaces, and hyphens',
             })
     )
-    .max(10) // Maximum 10 tags per post
-    .unique()
-    .optional()
+    .max(10)                              // Maximum 10 tags per post
+    .unique()                              // No duplicate tag names allowed
+    .optional()                            // Tags are optional when creating a post
     .messages({
         'array.max': 'Cannot add more than 10 tags',
         'array.unique': 'Tags must be unique',

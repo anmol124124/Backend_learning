@@ -1,78 +1,75 @@
 // ---------------------------------------------------------
-// 1) IMPORTS
+// POST MODEL
 // ---------------------------------------------------------
-import { DataTypes } from "sequelize";   // DataTypes → column ka type set karne ke liye
-import sequelize from "../config/db.js"; // sequelize instance → database se connect hai
+// This file defines the "Posts" table in the database
+// Posts are the main content items (blog posts/articles) created by users
+
+// Importing DataTypes to define column types (STRING, INTEGER, TEXT, etc.)
+import { DataTypes } from "sequelize";
+// Importing the database connection instance
+import sequelize from "../config/db.js";
+// Importing User model (needed for the relationship between posts and users)
 import User from "./User.js";
-// ---------------------------------------------------------
-// 2) POST MODEL DEFINE KAR RAHEN
-// ---------------------------------------------------------
-// sequelize.define() → ye database me ek table create karta hai
-// "Post" → table ka naam Posts (S lag jayega)
+
+// Define the Post model (creates the "Posts" table in the database)
 const Post = sequelize.define("Post", {
 
-  // -------- ID (primary key) --------
+  // Primary key: unique ID for each post
   id: {
-    type: DataTypes.INTEGER,     // number hoga
-    autoIncrement: true,         // 1,2,3... auto increase
-    primaryKey: true             // ye main key hoga
+    type: DataTypes.INTEGER,     // Number type
+    autoIncrement: true,         // Automatically increases (1, 2, 3...)
+    primaryKey: true             // Main unique identifier for each post
   },
 
-  // -------- TITLE --------
+  // Post title (the headline of the blog post)
   title: {
-    type: DataTypes.STRING,      // small text, varchar(255)
-    allowNull: false             // title empty nahi ho sakta
+    type: DataTypes.STRING,      // Short text, max 255 characters
+    allowNull: false             // Title is required (can't create a post without one)
   },
 
-  // -------- CONTENT --------
+  // Post content (the main body text of the blog post)
   content: {
-    type: DataTypes.TEXT,        // long text (bada content)
-    allowNull: false
+    type: DataTypes.TEXT,        // Long text with no character limit
+    allowNull: false             // Content is required
   },
 
-  // -------- IMAGE (optional) --------
+  // Optional image URL (e.g., a cover image for the post)
   image: {
-    type: DataTypes.STRING,      // Cloudinary URL
+    type: DataTypes.STRING,      // Stores the Cloudinary URL of the uploaded image
     allowNull: true              // Images are optional
   },
 
-  // -------- USER ID (kis user ne post banayi?) --------
+  // ID of the user who created this post (the author)
   userId: {
-    type: DataTypes.INTEGER,     // number hoga
-    allowNull: false             // ye empty nahi ho sakta
-    // ❗Later hum isko USERS TABLE se link bhi karenge (relation)
+    type: DataTypes.INTEGER,     // Number type (references User's ID)
+    allowNull: false             // Every post must have an author
+    // This will be linked to the Users table via associations
   },
 
-  // -------- CATEGORY ID (post ka category) --------
+  // ID of the category this post belongs to (e.g., Technology, Lifestyle)
   categoryId: {
-    type: DataTypes.INTEGER,     // number hoga
-    allowNull: true,             // optional - post can exist without category
+    type: DataTypes.INTEGER,     // Number type (references Category's ID)
+    allowNull: true,             // Optional - a post can exist without a category
     references: {
-      model: 'Categories',
-      key: 'id'
+      model: 'Categories',      // Links to the Categories table
+      key: 'id'                  // Specifically the 'id' column
     },
-    onDelete: 'SET NULL'         // agar category delete ho to null set kar do
+    onDelete: 'SET NULL'         // If the category is deleted, set this to null (don't delete the post)
   }
 
 }, {
-  timestamps: true,
-  paranoid: true,
+  timestamps: true,              // Automatically adds createdAt and updatedAt columns
+  paranoid: true,                // Enables soft delete (deletedAt column instead of permanent deletion)
 
-  // Database indexes for performance optimization
+  // Database indexes for faster queries
   indexes: [
-    { fields: ['userId'] },                      // Get user's posts
-    { fields: ['createdAt'] },                   // Sort by date
-    { fields: ['userId', 'createdAt'] },         // Compound: user's posts sorted by date
-    { fields: ['deletedAt'] }                    // Paranoid queries (soft deletes)
+    { fields: ['userId'] },                      // Fast lookup: "get all posts by this user"
+    { fields: ['createdAt'] },                   // Fast lookup: "sort posts by date"
+    { fields: ['userId', 'createdAt'] },         // Fast lookup: "get user's posts sorted by date"
+    { fields: ['deletedAt'] }                    // Fast lookup for soft-delete queries
   ]
-  // createdAt + updatedAt auto add honge
+  // createdAt and updatedAt are automatically added by timestamps: true
 });
 
-
-
-
-
-// ---------------------------------------------------------
-// 3) EXPORT MODEL
-// ---------------------------------------------------------
-export default Post;             // Dusri files me use karne ke liye export
+// Export the Post model so other files can use it
+export default Post;

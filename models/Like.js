@@ -1,54 +1,55 @@
-// Import DataTypes from Sequelize
-// DataTypes tell Sequelize what kind of data each column will store
-import { DataTypes } from "sequelize";
+// ---------------------------------------------------------
+// LIKE MODEL
+// ---------------------------------------------------------
+// This file defines the "Likes" table in the database
+// A like represents a user expressing they enjoyed a post
 
-// Import the already-created database connection
-// This is the single Sequelize instance connected to your DB
+// Importing DataTypes to define what each column stores
+import { DataTypes } from "sequelize";
+// Importing the database connection instance
 import sequelize from "../config/db.js";
 
-// Define a new table/model named "Like"
+// Define the Like model (creates the "Likes" table)
 const Like = sequelize.define("Like", {
 
-    // Primary key: unique ID for every like
+    // Primary key: unique ID for every like record
     id: {
         type: DataTypes.INTEGER,     // Number type
         autoIncrement: true,         // Automatically increases (1, 2, 3...)
-        primaryKey: true             // Makes this column the main identifier
+        primaryKey: true             // Main unique identifier for each like
     },
 
-    // Stores the ID of the user who liked the post
+    // ID of the user who liked the post
     userId: {
-        type: DataTypes.INTEGER,     // User ID will be a number
-        allowNull: false             // User ID must always be present
+        type: DataTypes.INTEGER,     // Number type (references User's ID)
+        allowNull: false             // Every like must come from a user
     },
 
-    // Stores the ID of the post that was liked
+    // ID of the post that was liked
     postId: {
-        type: DataTypes.INTEGER,     // Post ID will be a number
-        allowNull: false             // Post ID must always be present
+        type: DataTypes.INTEGER,     // Number type (references Post's ID)
+        allowNull: false             // Every like must be on a post
     }
 
 }, {
-    // Automatically adds createdAt and updatedAt columns
-    timestamps: true,
-    paranoid: true,
+    timestamps: true,                // Adds createdAt and updatedAt columns
+    paranoid: true,                  // Enables soft delete (sets deletedAt instead of actually deleting)
 
-    // Prevents the same user from liking the same post more than once
-    // (userId + postId combination must be unique)
+    // Constraint: same user can't like the same post more than once
     uniqueKeys: {
         unique_like: {
-            fields: ['userId', 'postId']
+            fields: ['userId', 'postId']  // The combination of userId + postId must be unique
         }
     },
 
-    // Database indexes for performance optimization
+    // Database indexes for faster queries
     indexes: [
-        { fields: ['postId'] },                  // Get post's likes count
-        { fields: ['userId'] },                  // Get user's liked posts
-        { fields: ['userId', 'postId'], unique: true }, // Prevent duplicate likes
-        { fields: ['deletedAt'] }                // Paranoid queries (soft deletes)
+        { fields: ['postId'] },                  // Fast lookup: "count likes on this post"
+        { fields: ['userId'] },                  // Fast lookup: "get all posts this user liked"
+        { fields: ['userId', 'postId'], unique: true }, // Enforce: one like per user per post
+        { fields: ['deletedAt'] }                // Fast lookup for soft-delete queries
     ]
 });
 
-// Export the Like model so it can be used in other files
+// Export the Like model so other files can use it
 export default Like;
