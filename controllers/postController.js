@@ -25,12 +25,13 @@ import { setCache, getCache, clearCache } from "../utils/cache.js";
 // This function creates a new blog post
 export const createPost = catchAsync(async (req, res, next) => {
   // Extract post data from the request body (what the user submitted in the form)
-  const { title, content, image, tags } = req.body;
+  // Added "status" to the list so users can pick "Draft" or "Published"
+  const { title, content, image, tags, status } = req.body;
   // Get the logged-in user's ID (they're the author of this post)
   const userId = req.user.userId;
 
-  // Create the new post in the database
-  const newPost = await Post.create({ title, content, image, userId });
+  // Create the new post in the database (including the new status field)
+  const newPost = await Post.create({ title, content, image, userId, status: status || 'published' });
 
   // If the user provided tags (e.g., ["javascript", "react"]), attach them to the post
   if (tags && tags.length > 0) {
@@ -90,8 +91,8 @@ export const paginatePosts = catchAsync(async (req, res, next) => {
     // --- STEP 2: DATABASE FETCH (If not in cache) ---
     // Build search filter: if search term exists, search in post titles (case-insensitive)
     const whereCondition = search
-      ? { title: { [Op.iLike]: `%${search}%` } }  // iLike = case-insensitive search
-      : {};  // Empty object = no filter (get all posts)
+      ? { title: { [Op.iLike]: `%${search}%` }, status: 'published' }  // iLike = case-insensitive search
+      : { status: 'published' };  // Only show published posts to the public!
 
     // Fetch posts from the database with all related data
     const result = await Post.findAndCountAll({
@@ -316,7 +317,11 @@ export const getPostById = catchAsync(async (req, res, next) => {
 export const getUserPosts = catchAsync(async (req, res, next) => {
   // Find all posts where the userId matches the ID from the URL parameter
   const posts = await Post.findAll({
-    where: { userId: req.params.id },      // Filter by user ID
+    where: {
+      userId: req.params.id,
+      // Logic: If I am the author, show me everything. If not, only show 'published' posts.
+      status: req.user?.userId === parseInt(req.params.id) ? { [Op.or]: ['draft', 'published'] } : 'published'
+    },
     include: {
       model: User,                          // Include the author's info
       attributes: ["id", "username", "email"],
@@ -348,6 +353,7 @@ export const updatePost = catchAsync(async (req, res, next) => {
   if (req.body.title !== undefined) post.title = req.body.title;       // Update title if provided
   if (req.body.content !== undefined) post.content = req.body.content; // Update content if provided
   if (req.body.image !== undefined) post.image = req.body.image;       // Update image if provided
+  if (req.body.status !== undefined) post.status = req.body.status;   // Update status (Draft vs Published)
 
   // Save the changes to the database
   await post.save();

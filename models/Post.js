@@ -55,6 +55,13 @@ const Post = sequelize.define("Post", {
       key: 'id'                  // Specifically the 'id' column
     },
     onDelete: 'SET NULL'         // If the category is deleted, set this to null (don't delete the post)
+  },
+
+  // Post Status: Is this post public or still a work-in-progress?
+  status: {
+    type: DataTypes.ENUM("draft", "published"), // Only these two options are allowed
+    allowNull: false,                           // Every post must have a status
+    defaultValue: "published"                  // Default to public if not specified
   }
 
 }, {
