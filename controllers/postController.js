@@ -16,6 +16,8 @@ import catchAsync from "../utils/catchAsync.js";
 import AppError from "../utils/AppError.js";
 // Importing helper function to create or find existing tags
 import { createOrGetTags } from "./tagController.js";
+// Importing our new cache helpers (setCache = save, getCache = read)
+import { setCache, getCache, clearCache } from "../utils/cache.js";
 
 /* ===========================
    CREATE POST
@@ -46,7 +48,10 @@ export const createPost = catchAsync(async (req, res, next) => {
     ]
   });
 
-  // Clear the cached "all posts" from Redis since we added a new post
+  // Clear the cached "home feed" and "category pages" from Redis since we added a new post
+  // We use the pattern "posts:feed:*" and "category:posts:*" to wipe all related memory
+  await clearCache("posts:feed:*");
+  await clearCache("category:posts:*");
   await redisClient.del("posts:all");
 
   // Send success response with the newly created post (including its tags)
@@ -69,94 +74,107 @@ export const paginatePosts = catchAsync(async (req, res, next) => {
   // Calculate how many records to skip (e.g., page 3 with 5 per page → skip first 10)
   const offset = (page - 1) * limit;
 
-  // Build search filter: if search term exists, search in post titles (case-insensitive)
-  const whereCondition = search
-    ? { title: { [Op.iLike]: `%${search}%` } }  // iLike = case-insensitive search
-    : {};  // Empty object = no filter (get all posts)
+  // --- STEP 1: CACHE CHECK ---
+  // Create a unique name for this specific search/page (e.g., "posts:feed:1:5:searchTerm")
+  const cacheKey = `posts:feed:${page}:${limit}:${search || 'none'}`;
 
-  // Get the current user's ID if they're logged in (used for like/bookmark status)
-  const currentUserId = req.user?.userId;
+  // Try to find this exact list of posts in our fast memory (Redis)
+  let cachedData = await getCache(cacheKey);
+  let posts, count;
 
-  // Fetch posts from the database with all related data
-  const { rows: posts, count } = await Post.findAndCountAll({
-    where: whereCondition,          // Apply search filter
-    limit,                          // How many posts per page
-    offset,                         // How many posts to skip
-    include: [
-      {
-        model: User,                // Include the post's author
-        attributes: ["id", "username", "email"],  // Only these author fields
-      },
-      {
-        model: Tag,                 // Include tags attached to the post
-        as: 'tags',
-        attributes: ['id', 'name', 'slug'],
-        through: { attributes: [] }  // Don't include join table data
-      },
-      {
-        model: Category,            // Include the post's category
-        as: 'category',
-        attributes: ['id', 'name', 'icon', 'color']
-      },
-      {
-        model: Comment,             // Include comments (empty attributes = just for counting)
-        attributes: []
-      },
-      {
-        model: Like,                // Include likes (empty attributes = just for counting)
-        attributes: []
-      }
-    ],
-    attributes: {
+  if (cachedData) {
+    // If found, use the cached versions! (Saves a heavy database query)
+    posts = cachedData.posts;
+    count = cachedData.count;
+  } else {
+    // --- STEP 2: DATABASE FETCH (If not in cache) ---
+    // Build search filter: if search term exists, search in post titles (case-insensitive)
+    const whereCondition = search
+      ? { title: { [Op.iLike]: `%${search}%` } }  // iLike = case-insensitive search
+      : {};  // Empty object = no filter (get all posts)
+
+    // Fetch posts from the database with all related data
+    const result = await Post.findAndCountAll({
+      where: whereCondition,          // Apply search filter
+      limit,                          // How many posts per page
+      offset,                         // How many posts to skip
       include: [
-        // Count unique comments for each post using SQL COUNT function
-        [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Comments.id'))), 'commentCount'],
-        // Count unique likes for each post using SQL COUNT function
-        [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Likes.id'))), 'likeCount']
-      ]
-    },
-    // Group by these columns to prevent duplicate rows from joins
-    group: ['Post.id', 'User.id', 'tags.id', 'tags.PostTag.postId', 'tags.PostTag.tagId', 'category.id'],
-    // Performance optimization: don't create a sub-query
-    subQuery: false,
-    // Show newest posts first
-    order: [["createdAt", "DESC"]],
-  });
-
-  // For each post, check if the current user has liked and bookmarked it
-  const formattedPosts = await Promise.all(posts.map(async (post) => {
-    let isLiked = false;          // Default: user hasn't liked this post
-    let isBookmarked = false;     // Default: user hasn't bookmarked this post
-
-    // Only check like/bookmark status if a user is logged in
-    if (currentUserId) {
-      // Check if this user has liked this post
-      const userLike = await Like.findOne({
-        where: {
-          postId: post.id,         // This post
-          userId: currentUserId    // This user
+        {
+          model: User,                // Include the post's author
+          attributes: ["id", "username", "email"],  // Only these author fields
+        },
+        {
+          model: Tag,                 // Include tags attached to the post
+          as: 'tags',
+          attributes: ['id', 'name', 'slug'],
+          through: { attributes: [] }  // Don't include join table data
+        },
+        {
+          model: Category,            // Include the post's category
+          as: 'category',
+          attributes: ['id', 'name', 'icon', 'color']
+        },
+        {
+          model: Comment,             // Include comments (empty attributes = just for counting)
+          attributes: []
+        },
+        {
+          model: Like,                // Include likes (empty attributes = just for counting)
+          attributes: []
         }
-      });
-      isLiked = !!userLike;       // Convert to true/false
+      ],
+      attributes: {
+        include: [
+          // Count unique comments for each post using SQL COUNT function
+          [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Comments.id'))), 'commentCount'],
+          // Count unique likes for each post using SQL COUNT function
+          [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Likes.id'))), 'likeCount']
+        ]
+      },
+      // Group by these columns to prevent duplicate rows from joins
+      group: ['Post.id', 'User.id', 'tags.id', 'tags.PostTag.postId', 'tags.PostTag.tagId', 'category.id'],
+      // Performance optimization: don't create a sub-query
+      subQuery: false,
+      // Show newest posts first
+      order: [["createdAt", "DESC"]],
+    });
 
-      // Check if this user has bookmarked this post
-      const userBookmark = await Bookmark.findOne({
-        where: {
-          postId: post.id,         // This post
-          userId: currentUserId    // This user
-        }
-      });
-      isBookmarked = !!userBookmark;  // Convert to true/false
-    }
+    posts = result.rows.map(p => p.toJSON()); // Convert to plain objects for saving
+    count = result.count.length || result.count;
 
-    // Return a clean post object with all the extra info
-    return {
-      ...post.toJSON(),                                              // Spread all post data
-      commentCount: parseInt(post.dataValues.commentCount) || 0,     // Parse comment count as number
-      likeCount: parseInt(post.dataValues.likeCount) || 0,           // Parse like count as number
-      isLiked,                                                       // Has current user liked this?
-      isBookmarked                                                   // Has current user bookmarked this?
-    };
+    // Save this result to the cache for 5 minutes (300 seconds)
+    // This makes the next person who loads the home page 10x faster!
+    await setCache(cacheKey, { posts, count }, 300);
+  }
+
+  // --- STEP 3: USER-SPECIFIC DATA (Likes & Bookmarks) ---
+  // We don't cache this part because every user likes different things!
+  const currentUserId = req.user?.userId;
+  let userLikes = new Set();
+  let userBookmarks = new Set();
+
+  if (currentUserId && posts.length > 0) {
+    const postIds = posts.map(p => p.id);
+
+    // Optimized Multi-Fetch: Find all likes/bookmarks for this user in ONE query instead of N
+    const [likes, bookmarks] = await Promise.all([
+      Like.findAll({ where: { userId: currentUserId, postId: postIds }, attributes: ['postId'] }),
+      Bookmark.findAll({ where: { userId: currentUserId, postId: postIds }, attributes: ['postId'] })
+    ]);
+
+    // Put IDs in a Set for super-fast lookup
+    userLikes = new Set(likes.map(l => l.postId));
+    userBookmarks = new Set(bookmarks.map(b => b.postId));
+  }
+
+  // --- STEP 4: MERGE DATA ---
+  // Combine the cached public data with the user's private like/bookmark status
+  const formattedPosts = posts.map(post => ({
+    ...post,
+    commentCount: parseInt(post.commentCount) || 0,
+    likeCount: parseInt(post.likeCount) || 0,
+    isLiked: userLikes.has(post.id),      // Fast check: is ID in our "Liked" list?
+    isBookmarked: userBookmarks.has(post.id) // Fast check: is ID in our "Bookmarked" list?
   }));
 
   // Send the response with posts and pagination metadata
@@ -165,8 +183,8 @@ export const paginatePosts = catchAsync(async (req, res, next) => {
     pagination: {
       page,                           // Current page number
       limit,                          // Posts per page
-      totalPosts: count.length || count,   // Total posts (count is array when using GROUP BY)
-      totalPages: Math.ceil((count.length || count) / limit),  // Total pages available
+      totalPosts: count,              // Total posts
+      totalPages: Math.ceil(count / limit),  // Total pages available
     },
   });
 });
@@ -335,6 +353,9 @@ export const updatePost = catchAsync(async (req, res, next) => {
   await post.save();
 
   // Clear the cache since this post was modified
+  // We clear the home feed, category pages, and the specific post memory
+  await clearCache("posts:feed:*");
+  await clearCache("category:posts:*");
   await redisClient.del("posts:all");                           // Clear all posts cache
   await redisClient.del(`posts:id:${req.params.id}`);          // Clear this specific post's cache
 
@@ -384,6 +405,9 @@ export const deletePost = catchAsync(async (req, res, next) => {
   });
 
   // Clear the cache after successful deletion
+  // Remove it from the feed, categories, and the specific ID memory
+  await clearCache("posts:feed:*");
+  await clearCache("category:posts:*");
   await redisClient.del("posts:all");                           // Clear all posts cache
   await redisClient.del(`posts:id:${req.params.id}`);          // Clear this specific post's cache
 
@@ -449,6 +473,8 @@ export const toggleLike = catchAsync(async (req, res, next) => {
   });
 
   // Clear the cache since like count changed
+  // This ensures the numbers stay accurate on the home page
+  await clearCache("posts:feed:*");
   await redisClient.del("posts:all");
 
   // Determine the new like state after the toggle

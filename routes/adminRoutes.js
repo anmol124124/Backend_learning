@@ -42,7 +42,7 @@ router.use(allowRoles('admin'));         // Step 2: Check if user has "admin" ro
  *   name: Admin
  *   description: Admin panel APIs (Admin only)
  */
-6 
+
 /**
  * @swagger
  * /api/v1/admin/stats:

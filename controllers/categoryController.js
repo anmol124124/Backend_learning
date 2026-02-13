@@ -13,6 +13,8 @@ import AppError from "../utils/AppError.js";
 import { successResponse } from "../utils/apiResponse.js";
 // Importing database connection for advanced SQL functions (like COUNT)
 import sequelize from "../config/db.js";
+// Importing our new cache helpers (setCache = save, getCache = read)
+import { setCache, getCache, clearCache } from "../utils/cache.js";
 
 // ---------------------------------------------------------
 // GET ALL CATEGORIES
@@ -67,109 +69,118 @@ export const getPostsByCategory = catchAsync(async (req, res, next) => {
     // Calculate how many records to skip (page 2 with 10 per page → skip first 10)
     const offset = (page - 1) * limit;
 
-    // First, find the category by its slug to get its ID
-    const category = await Category.findOne({ where: { slug } });
+    // --- STEP 1: CACHE CHECK ---
+    // Save this category's posts under a unique name (e.g., "category:posts:tech:1:10")
+    const cacheKey = `category:posts:${slug}:${page}:${limit}`;
+    let cachedData = await getCache(cacheKey);
+    let posts, totalCount;
 
-    // If category doesn't exist, return a 404 error
-    if (!category) {
-        return next(new AppError("Category not found", 404));
-    }
+    if (cachedData) {
+        // If we've loaded this category page recently, use the memory!
+        posts = cachedData.posts;
+        totalCount = cachedData.totalCount;
+    } else {
+        // --- STEP 2: DATABASE FETCH ---
+        // First, find the category by its slug to get its ID
+        const categoryResult = await Category.findOne({ where: { slug } });
 
-    // Now get all posts that belong to this category
-    const { rows: posts, count } = await Post.findAndCountAll({
-        // Filter posts by this category's ID
-        where: { categoryId: category.id },
-        // Include related data alongside each post
-        include: [
-            {
-                model: User,                                    // Include post author info
-                attributes: ['id', 'username', 'avatar']       // Only these fields
-            },
-            {
-                model: Category,                                // Include category info
-                as: 'category',
-                attributes: ['id', 'name', 'slug', 'icon', 'color']
-            },
-            {
-                model: Tag,                                     // Include tags attached to the post
-                as: 'tags',
-                attributes: ['id', 'name', 'slug'],
-                through: { attributes: [] }                    // Don't include join table data
-            },
-            {
-                model: Comment,                                 // Include comments (for counting only)
-                attributes: []
-            },
-            {
-                model: Like,                                    // Include likes (for counting only)
-                attributes: []
-            }
-        ],
-        attributes: {
+        // If category doesn't exist, return a 404 error
+        if (!categoryResult) {
+            return next(new AppError("Category not found", 404));
+        }
+
+        // Now get all posts that belong to this category
+        const result = await Post.findAndCountAll({
+            // Filter posts by this category's ID
+            where: { categoryId: categoryResult.id },
+            // Include related data alongside each post
             include: [
-                // Count how many unique comments each post has
-                [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Comments.id'))), 'commentCount'],
-                // Count how many unique likes each post has
-                [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Likes.id'))), 'likeCount']
-            ]
-        },
-        // Group results by these columns to avoid duplicate rows from joins
-        group: ['Post.id', 'User.id', 'category.id', 'tags.id', 'tags.PostTag.postId', 'tags.PostTag.tagId'],
-        // Show newest posts first
-        order: [['createdAt', 'DESC']],
-        // Pagination: how many posts per page
-        limit: parseInt(limit),
-        // Pagination: how many posts to skip
-        offset: parseInt(offset),
-        // Performance: don't create a sub-query
-        subQuery: false
-    });
+                {
+                    model: User,                                    // Include post author info
+                    attributes: ['id', 'username', 'avatar']       // Only these fields
+                },
+                {
+                    model: Category,                                // Include category info
+                    as: 'category',
+                    attributes: ['id', 'name', 'slug', 'icon', 'color']
+                },
+                {
+                    model: Tag,                                     // Include tags attached to the post
+                    as: 'tags',
+                    attributes: ['id', 'name', 'slug'],
+                    through: { attributes: [] }                    // Don't include join table data
+                },
+                {
+                    model: Comment,                                 // Include comments (for counting only)
+                    attributes: []
+                },
+                {
+                    model: Like,                                    // Include likes (for counting only)
+                    attributes: []
+                }
+            ],
+            attributes: {
+                include: [
+                    // Count how many unique comments each post has
+                    [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Comments.id'))), 'commentCount'],
+                    // Count how many unique likes each post has
+                    [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('Likes.id'))), 'likeCount']
+                ]
+            },
+            // Group results by these columns to avoid duplicate rows from joins
+            group: ['Post.id', 'User.id', 'category.id', 'tags.id', 'tags.PostTag.postId', 'tags.PostTag.tagId'],
+            // Show newest posts first
+            order: [['createdAt', 'DESC']],
+            // Pagination: how many posts per page
+            limit: parseInt(limit),
+            // Pagination: how many posts to skip
+            offset: parseInt(offset),
+            // Performance: don't create a sub-query
+            subQuery: false
+        });
 
-    // Check if the logged-in user has liked any of these posts
-    let postsWithLikeStatus = posts;
-    // Only check likes if a user is logged in
-    if (req.user) {
-        postsWithLikeStatus = await Promise.all(
-            // Loop through each post and check for likes
-            posts.map(async (post) => {
-                // Look for a like record from this user for this post
-                const isLiked = await Like.findOne({
-                    where: {
-                        userId: req.user.userId,   // Current user's ID
-                        postId: post.id            // This post's ID
-                    }
-                });
-                // Return the post data with the like status added
-                return {
-                    ...post.toJSON(),              // Spread all existing post data
-                    isLiked: !!isLiked             // Convert to true/false (true if liked)
-                };
-            })
-        );
+        posts = result.rows.map(p => p.toJSON());
+        totalCount = await Post.count({ where: { categoryId: categoryResult.id } });
+
+        // Save for 5 minutes (300 seconds)
+        await setCache(cacheKey, { posts, totalCount }, 300);
     }
 
-    // Get the total number of posts in this category (for pagination math)
-    const totalCount = await Post.count({
-        where: { categoryId: category.id }
-    });
+    // --- STEP 3: USER-SPECIFIC DATA (Likes) ---
+    // Patch in "isLiked" status based on who is currently looking at the page
+    let userLikes = new Set();
+    if (req.user && posts.length > 0) {
+        const postIds = posts.map(p => p.id);
+        const likes = await Like.findAll({
+            where: { userId: req.user.userId, postId: postIds },
+            attributes: ['postId']
+        });
+        userLikes = new Set(likes.map(l => l.postId));
+    }
+
+    // Merge cached posts with user's specific like status
+    const postsWithLikeStatus = posts.map(post => ({
+        ...post,
+        commentCount: parseInt(post.commentCount) || 0,
+        likeCount: parseInt(post.likeCount) || 0,
+        isLiked: userLikes.has(post.id)
+    }));
 
     // Send the response with category info, posts, and pagination details
+    const finalCategory = posts[0]?.category || cachedData?.category || {
+        id: posts[0]?.categoryId,
+        name: slug,
+        slug: slug
+    };
+
     successResponse(res, "Posts fetched successfully", {
-        category: {
-            id: category.id,                   // Category ID
-            name: category.name,               // Category name (e.g., "Technology")
-            slug: category.slug,               // URL-friendly name (e.g., "technology")
-            description: category.description, // Category description
-            icon: category.icon,               // Icon for UI display
-            color: category.color,             // Color for UI display
-            postCount: category.postCount      // Total posts in this category
-        },
-        posts: postsWithLikeStatus,            // Array of posts with like status
+        category: finalCategory,
+        posts: postsWithLikeStatus,
         pagination: {
-            currentPage: parseInt(page),                   // Current page number
-            totalPages: Math.ceil(totalCount / limit),     // Total pages available
-            totalPosts: totalCount,                        // Total post count
-            limit: parseInt(limit)                         // Posts per page
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(totalCount / limit),
+            totalPosts: totalCount,
+            limit: parseInt(limit)
         }
     });
 });
