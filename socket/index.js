@@ -10,13 +10,17 @@ import { Server } from "socket.io";
 // Import JWT for authenticating socket connections
 import jwt from "jsonwebtoken";
 
+// Create a Socket.IO server (will be attached to HTTP server later)
+// This is exported so app.js can access it
+export let io;
+
 /**
  * Initialize Socket.IO and set up event handlers
  * @param {http.Server} server - The HTTP server to attach Socket.IO to
  */
 const initSocket = (server) => {
   // Create a new Socket.IO server attached to the HTTP server
-  const io = new Server(server, {
+  io = new Server(server, {
     cors: {
       origin: "*",                    // Allow connections from any origin (for development)
     },

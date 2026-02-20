@@ -66,7 +66,7 @@ import "./config/passport.js";                   // Passport strategies (Google,
 
 // Import Socket.IO for real-time features
 import initSocket from "./socket/index.js";      // Socket initialization function
-import { Server } from "socket.io";              // Socket.IO Server class
+import { io } from "./socket/index.js";          // Socket.IO server instance
 
 // Import health check routes
 import healthRoutes from "./routes/healthRoutes.js";
@@ -140,14 +140,11 @@ app.use(errorHandler);
 // ---------------------------------------------------------
 // 7) SOCKET.IO SETUP
 // ---------------------------------------------------------
-// Create a Socket.IO server for real-time communication
-export const io = new Server(server, {
-  cors: {
-    origin: "*",                                  // Allow socket connections from anywhere
-  },
-});
+// Initialize Socket.IO for real-time communication
+// The initSocket function creates and configures the Socket.IO server
+initSocket(server);
 
-// Make the Socket.IO instance available throughout the app via app.get("io")
+// Make the Socket.IO instance available throughout the app
 app.set("io", io);
 
 // ---------------------------------------------------------
@@ -171,7 +168,6 @@ const startServer = async () => {
     logger.info("Redis connected successfully");
 
     // Step 3: Initialize Socket.IO for real-time features
-    initSocket(server);
     console.log('⚡  Socket.IO initialized');
 
     // Step 4: Start listening for HTTP requests
